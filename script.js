@@ -469,59 +469,60 @@
 
 
   /* ─── HORIZONTAL STICKY SCROLL ──────────────────────────── */
-  const expSection = document.getElementById('experience');
-  const horizTrack = document.getElementById('horizontal-track');
+  const expSection   = document.getElementById('experience');
+  const horizTrack   = document.getElementById('horizontal-track');
   const slideCounter = document.getElementById('slide-counter');
 
   if (expSection && horizTrack) {
     const stickyContainer = expSection.querySelector('.sticky-scroll-container');
-    let maxScroll = 0;
+    let maxScroll   = 0;
     let totalSlides = 0;
+    let currentX    = 0;   // actual rendered position
+    let targetX     = 0;   // desired position from scroll
+    let rafId       = null;
+    const LERP      = 0.10; // lower = smoother/slower, higher = snappier
 
     const calculateDimensions = () => {
-      maxScroll = horizTrack.scrollWidth - stickyContainer.offsetWidth;
+      maxScroll   = horizTrack.scrollWidth - stickyContainer.offsetWidth;
       totalSlides = horizTrack.children.length;
     };
-    
-    // Initial calculation and listen to resize
     calculateDimensions();
     window.addEventListener('resize', calculateDimensions);
 
-    let ticking = false;
+    // Continuously animate toward targetX
+    function animateSlider() {
+      // Lerp: ease current toward target
+      const diff = targetX - currentX;
+      if (Math.abs(diff) > 0.5) {
+        currentX += diff * LERP;
+      } else {
+        currentX = targetX; // snap when close enough
+      }
+
+      horizTrack.style.transform = `translate3d(${-currentX}px, 0, 0)`;
+
+      if (slideCounter && totalSlides > 0) {
+        const progress  = maxScroll > 0 ? currentX / maxScroll : 0;
+        const idx       = Math.min(totalSlides, Math.floor(progress * totalSlides) + 1);
+        slideCounter.textContent = `0${idx} / 0${totalSlides}`;
+      }
+
+      rafId = requestAnimationFrame(animateSlider);
+    }
+    animateSlider(); // always running — lightweight when diff ≈ 0
+
     window.addEventListener('scroll', () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const rect = expSection.getBoundingClientRect();
-          
-          if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
-            const scrollableDist = rect.height - window.innerHeight;
-            let progress = Math.abs(rect.top) / scrollableDist;
-            progress = Math.max(0, Math.min(progress, 1));
+      const rect           = expSection.getBoundingClientRect();
+      const scrollableDist = rect.height - window.innerHeight;
 
-            if (maxScroll > 0) {
-              horizTrack.style.transform = `translate3d(-${progress * maxScroll}px, 0, 0)`;
-            }
-
-            if (slideCounter) {
-              const currentIndex = Math.min(totalSlides, Math.floor(progress * totalSlides) + 1);
-              slideCounter.textContent = `0${currentIndex} / 0${totalSlides}`;
-            }
-          } else if (rect.top > 0) {
-            horizTrack.style.transform = `translate3d(0px, 0, 0)`;
-            if (slideCounter && totalSlides > 0) {
-              slideCounter.textContent = `01 / 0${totalSlides}`;
-            }
-          } else if (rect.bottom < window.innerHeight) {
-            if (maxScroll > 0) {
-              horizTrack.style.transform = `translate3d(-${maxScroll}px, 0, 0)`;
-            }
-            if (slideCounter && totalSlides > 0) {
-              slideCounter.textContent = `0${totalSlides} / 0${totalSlides}`;
-            }
-          }
-          ticking = false;
-        });
-        ticking = true;
+      if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
+        let progress = Math.abs(rect.top) / scrollableDist;
+        progress     = Math.max(0, Math.min(progress, 1));
+        targetX      = progress * maxScroll;
+      } else if (rect.top > 0) {
+        targetX = 0;
+      } else {
+        targetX = maxScroll;
       }
     }, { passive: true });
   }
