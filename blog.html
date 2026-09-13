@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog - Zain Abbas | Electrical Engineer</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Blog Page Specific Styles */
+      .blog-page-hero {
+        padding: 150px 0 80px;
+        background: linear-gradient(to bottom, var(--bg) 0%, var(--bg-secondary) 100%);
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+      .blog-page-hero::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 800px;
+        height: 800px;
+        background: radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
+        opacity: 0.15;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .blog-page-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+      }
+      .blog-page-subtitle {
+        font-size: 1.2rem;
+        color: var(--fg-muted);
+        max-width: 600px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+      
+      .blog-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 4rem 1.5rem;
+      }
+      
+      .blog-article {
+        margin-bottom: 6rem;
+        position: relative;
+      }
+      .blog-article:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        bottom: -3rem;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--border), transparent);
+      }
+      
+      .article-meta {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        font-size: 0.9rem;
+        color: var(--fg-muted);
+        margin-bottom: 1.5rem;
+      }
+      .article-tag {
+        background: rgba(255,49,49,0.1);
+        color: var(--accent);
+        padding: 0.3rem 0.8rem;
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      
+      .article-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+        color: var(--fg);
+      }
+      
+      .article-content p {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--fg-muted);
+        margin-bottom: 1.5rem;
+      }
+      .article-content h3 {
+        font-size: 1.5rem;
+        margin: 2.5rem 0 1rem;
+        color: var(--fg);
+      }
+      .article-content ul {
+        margin-bottom: 1.5rem;
+        padding-left: 1.5rem;
+      }
+      .article-content li {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--fg-muted);
+        margin-bottom: 0.5rem;
+      }
+      
+      /* Blockquote style */
+      .article-content blockquote {
+        border-left: 4px solid var(--accent);
+        background: var(--bg-card);
+        padding: 1.5rem;
+        margin: 2rem 0;
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        font-style: italic;
+      }
+      
+      /* Image placeholders */
+      .article-image {
+        width: 100%;
+        height: 300px;
+        border-radius: var(--radius-lg);
+        background: var(--bg-card);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: rgba(255,255,255,0.1);
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        background-size: cover;
+        background-position: center;
+      }
+
+      /* Blog figure images */
+      .article-content .blog-figure {
+        margin: 2rem 0;
+        text-align: center;
+      }
+      .article-content .blog-figure img {
+        width: 100%;
+        max-width: 720px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        padding: 0.5rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .article-content .blog-figure img:hover {
+        transform: scale(1.02);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+      }
+      .article-content .blog-figure figcaption {
+        font-size: 0.9rem;
+        color: var(--fg-muted);
+        margin-top: 0.75rem;
+        font-style: italic;
+      }
+
+      /* Blog tables */
+      .article-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        font-size: 0.95rem;
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .article-content th {
+        background: rgba(255,49,49,0.1);
+        color: var(--accent);
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .article-content td {
+        padding: 0.65rem 1rem;
+        color: var(--fg-muted);
+        border-top: 1px solid var(--border);
+      }
+      .article-content tr:hover td {
+        background: rgba(255,255,255,0.02);
+      }
+
+      /* Inline code in blog */
+      .article-content code {
+        background: rgba(255,49,49,0.08);
+        color: var(--accent);
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+        font-family: 'Courier New', monospace;
+      }
+
+      /* Web UI screenshot image */
+      .article-image-real {
+        width: 100%;
+        border-radius: var(--radius-lg);
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .article-image-real img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ══════════════════════════════════════════════
+     NAVBAR — Spotlight Floating Pill
+    ══════════════════════════════════════════════ -->
+    <header id="navbar">
+      <div class="nav-shell">
+        <!-- Logo -->
+        <a href="index.html#hero" class="nav-logo">ZAIN<span>.</span></a>
+
+        <!-- Floating pill nav -->
+        <nav
+          class="nav-pill"
+          id="nav-pill"
+          role="navigation"
+          aria-label="Main navigation"
+        >
+          <!-- Spotlight glow blob -->
+          <div class="nav-spotlight" id="nav-spotlight"></div>
+          <!-- Active indicator slide -->
+          <div class="nav-indicator" id="nav-indicator"></div>
+
+          <a href="index.html#about" class="nav-item" data-section="about">About</a>
+          <a href="index.html#skills" class="nav-item" data-section="skills">Skills</a>
+          <a href="index.html#experience" class="nav-item" data-section="experience">Experience</a>
+          <a href="index.html#projects" class="nav-item" data-section="projects">Projects</a>
+          <a href="index.html#signal-lab" class="nav-item" data-section="signal-lab">Signal Lab</a>
+          <a href="#" class="nav-item active" data-section="blog">Blog</a>
+          <a href="index.html#contact" class="nav-item" data-section="contact">Contact</a>
+        </nav>
+
+        <!-- Right actions -->
+        <div class="nav-actions">
+          <button
+            id="theme-toggle"
+            aria-label="Toggle theme"
+            title="Toggle dark/light mode"
+          >
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+          </button>
+          <a href="CV/Resume.pdf" download class="btn-primary">
+            <i class="fa-solid fa-download"></i> Resume
+          </a>
+          <button id="menu-toggle" aria-label="Open menu">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div class="mobile-menu" id="mobile-menu">
+        <a href="index.html#about">About</a>
+        <a href="index.html#skills">Skills</a>
+        <a href="index.html#experience">Experience</a>
+        <a href="index.html#projects">Projects</a>
+        <a href="index.html#signal-lab">Signal Lab</a>
+        <a href="#">Blog</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+    </header>
+
+    <!-- ══════════════════════════════════════════════
+     BLOG HEADER
+══════════════════════════════════════════════ -->
+    <section class="blog-page-hero">
+      <div class="container">
+        <h1 class="blog-page-title">Engineering Insights</h1>
+        <p class="blog-page-subtitle">Detailed write-ups on my portfolio projects, from Embedded Systems to AI and OS Architecture.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════ -->
+    <main class="blog-container">
+
+      <!-- ARTICLE: SOLAR POWER PREDICTION (NEW) -->
+      <article class="blog-article" id="solar-power-prediction">
+        <div class="article-meta">
+          <span class="article-tag">Machine Learning</span>
+          <span><i class="fa-regular fa-calendar"></i> September 2026</span>
+          <span><i class="fa-regular fa-clock"></i> 10 min read</span>
+        </div>
+        <h2 class="article-title">Predicting Solar Power Plant Output from Weather Data: A Linear Regression Study from Scratch</h2>
+        <div class="article-image-real">
+          <img src="Images/blog/Web UI.png" alt="Solar Power Prediction Dashboard" loading="lazy" />
+        </div>
+        <div class="article-content">
+          <p>
+            <em>Evaluating On-Site Weather Sensors vs. Public Satellite Reanalysis Data for Grid-Scale Solar Generation Forecasting</em>
+          </p>
+
+          <h3>1. The Question &amp; Problem Motivation</h3>
+          <p>
+            Solar photovoltaic (PV) power generation is inherently variable, dependent on diurnal solar geometry, atmospheric cloud attenuation, and panel temperature dynamics. For electrical grid operators, predicting solar plant AC power generation hours in advance is essential for load balancing, spinning reserve allocation, and grid frequency stability.
+          </p>
+          <p>
+            In this study, we investigate three core machine learning questions:
+          </p>
+          <ul>
+            <li><strong>Predictive Accuracy:</strong> Can linear regression fit strictly from scratch accurately predict plant-level hourly AC power generation (P<sub>AC</sub>) using atmospheric weather variables?</li>
+            <li><strong>On-Site vs. Remote Public Data:</strong> How much prediction accuracy is lost when replacing expensive on-site weather sensors with free, publicly accessible satellite reanalysis weather data (Open-Meteo API)?</li>
+            <li><strong>Optimization Solvers:</strong> How do closed-form analytical solvers (Normal Equation) compare to iterative optimization algorithms (Batch Gradient Descent and Stochastic Gradient Descent)?</li>
+          </ul>
+
+          <h3>2. Data Engineering &amp; Preparation</h3>
+          <p>
+            We analyze 34 days of continuous generation and weather data (May 15, 2020 – June 17, 2020) from <strong>Plant 1</strong>, located near Gandikota, Andhra Pradesh, India (Lat 14.82°N, Lon 78.28°E).
+          </p>
+          <p><strong>Preprocessing Pipeline:</strong></p>
+          <ul>
+            <li><strong>Timestamp Standardization:</strong> Raw generation files used non-standard date strings (<code>DD-MM-YYYY HH:MM</code>), whereas weather sensors logged standard ISO timestamps. All timestamps were standardized into native UTC/IST datetimes.</li>
+            <li><strong>Plant-Level Power Aggregation:</strong> The plant contains 22 separate central inverters. We aggregated total plant generation by summing <code>AC_POWER</code> and <code>DC_POWER</code> across all inverters at each 15-minute timestamp.</li>
+            <li><strong>Hourly Resampling:</strong> The 15-minute merged generation and weather readings were resampled to <strong>hourly arithmetic means</strong>, producing a clean dataset of <strong>796 hourly rows</strong>.</li>
+          </ul>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Metric / Parameter</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Raw generation rows (Plant 1)</td><td>68,778</td></tr>
+              <tr><td>Raw sensor rows (Plant 1)</td><td>3,182</td></tr>
+              <tr><td>Timestamps present in only one file</td><td>26</td></tr>
+              <tr><td>Hourly rows after resampling</td><td>796</td></tr>
+              <tr><td>Hourly rows with missing values</td><td>0</td></tr>
+              <tr><td>Open-Meteo weather rows downloaded</td><td>816</td></tr>
+              <tr><td>Correlation (Sensor vs Open-Meteo)</td><td><strong>0.9333</strong></td></tr>
+              <tr><td>Peak Hour Comparison</td><td><strong>12:00 PM</strong> (Identical)</td></tr>
+            </tbody>
+          </table>
+
+          <h3>3. Exploratory Data Analysis (EDA)</h3>
+          <p>
+            Before modeling, we explored the physical relationships across solar generation and meteorological variables.
+          </p>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig1_ac_vs_irradiation.png" alt="AC Power vs Irradiation" loading="lazy" />
+            <figcaption>Figure 1: AC Power vs. Irradiation scatter plot.</figcaption>
+          </figure>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig2_module_vs_ambient.png" alt="Module Temperature vs Ambient Temperature" loading="lazy" />
+            <figcaption>Figure 2: PV Module Temperature vs. Ambient Air Temperature (colored by irradiation).</figcaption>
+          </figure>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig3_ac_vs_dc.png" alt="AC Power vs DC Power" loading="lazy" />
+            <figcaption>Figure 3: AC Power vs. DC Power linear conversion ratio (Inverter efficiency ≈ 0.098).</figcaption>
+          </figure>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig4_avg_power_by_hour.png" alt="Average AC Power by Hour of Day" loading="lazy" />
+            <figcaption>Figure 4: Mean AC Power by hour of day (diurnal bell curve peaking at solar noon).</figcaption>
+          </figure>
+
+          <p><strong>Key EDA Insights:</strong></p>
+          <ul>
+            <li><strong>Linear Photovoltaic Response:</strong> AC power shows a strong linear correlation with solar irradiance (r &gt; 0.95).</li>
+            <li><strong>Thermal Panel Elevation:</strong> PV module temperature regularly exceeds ambient air temperature by <strong>15–25°C</strong> under direct solar irradiance due to radiative heating.</li>
+            <li><strong>Inverter Conversion Ratio:</strong> AC power vs DC power exhibits a near-perfect linear ratio of <strong>0.098</strong> (accounting for central inverter scaling and conversion efficiency).</li>
+            <li><strong>Diurnal Bell Curve:</strong> Hourly mean AC power follows a symmetrical bell curve peaking between <strong>11:00 AM and 1:00 PM</strong>, dropping to zero at night.</li>
+          </ul>
+
+          <h3>4. Location Verification: On-Site Sensor vs. Open-Meteo API</h3>
+          <p>
+            To verify the geographical coordinates of Plant 1 (Lat 14.82°N, Lon 78.28°E), we downloaded historical ERA5 reanalysis weather data from the <strong>Open-Meteo Historical Weather API</strong> and compared on-site sensor irradiance against satellite-derived shortwave radiation.
+          </p>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig5_weather_verification.png" alt="Location Verification Plot" loading="lazy" />
+            <figcaption>Figure 5: 3-day location verification comparison (Sensor Irradiation vs. Open-Meteo Shortwave Radiation).</figcaption>
+          </figure>
+
+          <p><strong>Verification Findings:</strong></p>
+          <ul>
+            <li>The correlation between on-site sensor irradiation and Open-Meteo shortwave radiation reached <strong>0.9333</strong>, confirming exact spatial alignment.</li>
+            <li>Both signals reach peak intensity at <strong>12:00 PM IST</strong>, confirming no time-zone offset or solar longitude discrepancy.</li>
+          </ul>
+
+          <h3>5. Linear Regression Implementation &amp; Solver Results</h3>
+          <p>
+            All algorithms were implemented <strong>from scratch using NumPy matrix operations</strong>:
+          </p>
+          <ul>
+            <li><strong>Normal Equation:</strong> θ = (X<sup>T</sup>X)<sup>-1</sup> X<sup>T</sup>y</li>
+            <li><strong>Batch Gradient Descent:</strong> θ ← θ − α (1/m) X<sup>T</sup>(Xθ − y)</li>
+            <li><strong>Stochastic Gradient Descent:</strong> θ ← θ − α (x<sup>(i)</sup>)<sup>T</sup>(x<sup>(i)</sup>θ − y<sup>(i)</sup>)</li>
+          </ul>
+          <p><strong>Feature Sets:</strong></p>
+          <ul>
+            <li><strong>Set A (On-Site Sensors):</strong> <code>irradiation</code>, <code>module_temp</code>, <code>ambient_temp</code>, sin/cos hour encoding (d=5)</li>
+            <li><strong>Set B (Public Weather):</strong> <code>sw_radiation</code>, <code>temp_2m</code>, <code>cloud_cover</code>, sin/cos hour encoding (d=5)</li>
+          </ul>
+          <p>
+            Feature Scaling used Z-score standardization with <strong>training set mean and standard deviation only</strong>. Train/Test Split: Chronological split — Train = May 15 to June 10 (628 hours), Test = June 11 to June 17 (168 hours).
+          </p>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig6_learning_rate_batch_gd.png" alt="Batch GD Learning Rates" loading="lazy" />
+            <figcaption>Figure 6: Batch GD Cost J(θ) vs. Iteration for α ∈ {10⁻⁵, 10⁻⁴, 10⁻³}.</figcaption>
+          </figure>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig7_learning_rate_sgd.png" alt="SGD Learning Rates" loading="lazy" />
+            <figcaption>Figure 7: SGD Cost J(θ) vs. Epoch for α ∈ {10⁻⁴, 10⁻³, 10⁻²}.</figcaption>
+          </figure>
+
+          <p><strong>Test-Set RMSE Performance (kW):</strong></p>
+          <table>
+            <thead>
+              <tr>
+                <th>Feature Set</th>
+                <th>Solver Method</th>
+                <th>Train RMSE</th>
+                <th>Test RMSE (All)</th>
+                <th>Test RMSE (Day)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Set A (Sensors)</td><td>Normal Equation</td><td>537.62</td><td>539.46</td><td><strong>704.46</strong></td></tr>
+              <tr><td>Set A (Sensors)</td><td>Batch GD (α=0.001)</td><td>741.84</td><td>880.25</td><td>1,144.76</td></tr>
+              <tr><td>Set A (Sensors)</td><td>SGD (α=0.01)</td><td>539.93</td><td>549.47</td><td>714.47</td></tr>
+              <tr><td>Set B (Public)</td><td>Normal Equation</td><td>2,699.92</td><td>2,620.94</td><td><strong>3,409.50</strong></td></tr>
+              <tr><td>Set B (Public)</td><td>Batch GD (α=0.1)</td><td>2,699.92</td><td>2,620.94</td><td>3,409.50</td></tr>
+              <tr><td>Set B (Public)</td><td>SGD (α=0.01)</td><td>2,744.92</td><td>2,699.92</td><td>3,453.25</td></tr>
+            </tbody>
+          </table>
+
+          <p><strong>Learned Weight Vector (θ) for Set A:</strong></p>
+          <table>
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Normal Eq</th>
+                <th>Batch GD</th>
+                <th>SGD</th>
+                <th>Interpretation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Intercept (x₀=1)</td><td>+6,890.57</td><td>+6,890.57</td><td>+6,876.12</td><td>Mean baseline plant power</td></tr>
+              <tr><td><code>irradiation</code></td><td>+8,345.04</td><td>+8,345.04</td><td>+8,312.45</td><td><strong>Primary Driver (+)</strong></td></tr>
+              <tr><td><code>module_temp</code></td><td>-108.12</td><td>-108.12</td><td>-104.30</td><td><strong>Thermal Efficiency Drop (−)</strong></td></tr>
+              <tr><td><code>ambient_temp</code></td><td>-17.16</td><td>-17.16</td><td>-15.80</td><td>Minor ambient coupling</td></tr>
+              <tr><td><code>sin_hour</code></td><td>-47.38</td><td>-47.38</td><td>-42.10</td><td>AM/PM asymmetry correction</td></tr>
+              <tr><td><code>cos_hour</code></td><td>-416.56</td><td>-416.56</td><td>-410.20</td><td>Diurnal cycle suppression</td></tr>
+            </tbody>
+          </table>
+
+          <h3>6. On-Site Sensors vs. Public Weather Data</h3>
+          <ul>
+            <li><strong>Set A Daytime RMSE:</strong> 704.46 kW (<strong>2.35%</strong> of 30 MW plant capacity)</li>
+            <li><strong>Set B Daytime RMSE:</strong> 3,409.50 kW (<strong>11.36%</strong> of 30 MW plant capacity)</li>
+            <li><strong>Relative Difference:</strong> Public weather data incurs <strong>+384% higher RMSE</strong></li>
+          </ul>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig9_actual_vs_predicted.png" alt="Actual vs Predicted Test Week" loading="lazy" />
+            <figcaption>Figure 8: Actual vs. Predicted AC Power across the 7-day test week (June 11–17, 2020).</figcaption>
+          </figure>
+
+          <blockquote>
+            Open-Meteo relies on satellite reanalysis grids (~10 km resolution). Sudden local cloud shadows passing over the plant are missed by satellite grids. Additionally, on-site sensors measure direct panel glass temperature (module_temp), which rises to 65°C under sunlight. Set B only has 2m air temperature, completely missing semiconductor thermal efficiency degradation.
+          </blockquote>
+
+          <h3>7. Model Diagnostics &amp; Residual Analysis</h3>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/fig8_residuals_by_hour.png" alt="Residuals vs Hour of Day" loading="lazy" />
+            <figcaption>Figure 9: Residuals (y − ŷ) vs. Hour of Day for Set A Normal Equation.</figcaption>
+          </figure>
+
+          <ul>
+            <li><strong>Nighttime (19:00 – 05:00):</strong> Residuals are identically zero due to post-processing ReLU clipping (max(ŷ, 0)).</li>
+            <li><strong>Midday Peak Error (11:00 – 14:00):</strong> Residuals show maximum variance (±2,000 kW). This is caused by inverter saturation/clipping at maximum solar irradiance and rapid thermal transient lags during midday cloud passages.</li>
+          </ul>
+
+          <h3>8. Conclusion &amp; Key Takeaways</h3>
+          <ul>
+            <li><strong>Photovoltaic Physics Matter:</strong> Solar irradiance is the dominant driver of generation (θ₁ = +8345), while module temperature exhibits a clear negative efficiency penalty (θ₂ = −108).</li>
+            <li><strong>On-Site Sensors are Mandatory for Precision:</strong> Relying solely on free public weather APIs increases prediction error by <strong>nearly 4×</strong> (704 kW vs 3,409 kW daytime RMSE).</li>
+            <li><strong>Closed-Form Normal Equation is Superior for Small m:</strong> For m ≈ 800 rows, the analytical Normal Equation achieves exact global minimum weights instantaneously without hyperparameter tuning.</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- ARTICLE 1 -->
+      <article class="blog-article" id="line-following-robot">
+        <div class="article-meta">
+          <span class="article-tag">Hardware & Robotics</span>
+          <span><i class="fa-regular fa-calendar"></i> May 2026</span>
+          <span><i class="fa-regular fa-clock"></i> 5 min read</span>
+        </div>
+        <h2 class="article-title">Building an Autonomous Line-Following Robot</h2>
+        <div class="article-image" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="article-content">
+          <p>
+            Robotics is the ultimate intersection of hardware and software. One of my fundamental projects during my B.S. in Electrical Engineering at FAST NUCES was designing and building a completely autonomous line-following robot from scratch. The objective was simple but the implementation required precise tuning: navigate a complex track using IR sensors without any human intervention.
+          </p>
+          <h3>Hardware Architecture</h3>
+          <p>
+            At the brain of the operation was the <strong>Arduino Uno</strong>. I selected it for its rapid prototyping capabilities and robust community support. To detect the line, I implemented an array of <strong>IR (Infrared) sensors</strong>. These sensors constantly measure the reflectivity of the surface beneath them—differentiating between the dark track line and the lighter floor.
+          </p>
+          <p>
+            The motor control was handled via an L298N motor driver, enabling bidirectional control of two DC motors. Power management was critical; I had to ensure the motors drew enough current without browning out the microcontroller.
+          </p>
+          <h3>Software and PID Tuning</h3>
+          <p>
+            Writing the control logic was the most challenging and rewarding part. A simple "if left sensor sees black, turn left" algorithm results in incredibly jerky and inefficient movement. To solve this, I implemented a custom algorithm inspired by PID (Proportional, Integral, Derivative) control logic. 
+          </p>
+          <blockquote>
+            "The key to smooth robotics isn't just knowing where you are, but predicting where the momentum will take you in the next few milliseconds."
+          </blockquote>
+          <p>
+            By reading the analog values of the IR array, the robot could calculate an "error" value based on how far off-center the line was, and adjust the motor PWM (Pulse Width Modulation) speeds proportionally. This resulted in buttery-smooth cornering.
+          </p>
+          <h3>Conclusion</h3>
+          <p>
+            This project solidified my understanding of closed-loop control systems and real-time microcontroller programming. It served as a fantastic stepping stone into more complex embedded architectures.
+          </p>
+        </div>
+      </article>
+
+      <!-- ARTICLE 2 -->
+      <article class="blog-article" id="smart-home">
+        <div class="article-meta">
+          <span class="article-tag">Embedded Systems</span>
+          <span><i class="fa-regular fa-calendar"></i> March 2026</span>
+          <span><i class="fa-regular fa-clock"></i> 6 min read</span>
+        </div>
+        <h2 class="article-title">Designing a Role-Based Smart Home Automation System with ATmega32</h2>
+        <div class="article-image" style="background: linear-gradient(135deg, #2a0845, #6441A5);">
+          <i class="fa-solid fa-house-signal"></i>
+        </div>
+        <div class="article-content">
+          <p>
+            While Arduinos are great for prototyping, industrial and commercial applications demand bare-metal microcontroller programming. To challenge myself with low-level register manipulation in C, I designed a Smart Home Automation System utilizing the <strong>ATmega32</strong> microcontroller.
+          </p>
+          <h3>System Overview</h3>
+          <p>
+            The project wasn't just about turning lights on and off; it was about security and hierarchy. I implemented a robust <strong>role-based access system</strong>. The system differentiates between "Admin" users and "Guest" users.
+          </p>
+          <ul>
+            <li><strong>Admin Access:</strong> Can configure the system, add/remove guests, and control all appliances.</li>
+            <li><strong>Guest Access:</strong> Can only toggle basic lighting and fan states, restricted from security controls.</li>
+          </ul>
+          <h3>Implementation Details</h3>
+          <p>
+            I interfaced a 4x4 matrix keypad for passcode entry and an alphanumeric LCD (16x2) for the user interface. Programming these peripherals required writing custom driver libraries in C, managing the GPIO (General Purpose Input/Output) registers directly rather than relying on abstracted libraries.
+          </p>
+          <p>
+            Authentication data (passwords and roles) was stored and retrieved from the ATmega32's internal <strong>EEPROM</strong>, ensuring that the system retained its configuration even after a power loss.
+          </p>
+          <h3>The Hardware Challenge</h3>
+          <p>
+            To safely control high-voltage AC appliances (simulated via 220V bulbs in the prototype), I designed an isolation circuit using optocouplers and mechanical relays. This ensured that any power surge on the AC side would not fry the delicate 5V DC logic of the ATmega32. This project deeply enhanced my understanding of memory management, bare-metal C programming, and power electronics isolation.
+          </p>
+        </div>
+      </article>
+
+      <!-- ARTICLE 3 -->
+      <article class="blog-article" id="os-simulator">
+        <div class="article-meta">
+          <span class="article-tag">Software Architecture</span>
+          <span><i class="fa-regular fa-calendar"></i> January 2026</span>
+          <span><i class="fa-regular fa-clock"></i> 7 min read</span>
+        </div>
+        <h2 class="article-title">Simulating an OS: Process & Resource Management in User-Space</h2>
+        <div class="article-image" style="background: linear-gradient(135deg, #0f2027, #2c5364);">
+          <i class="fa-solid fa-microchip"></i>
+        </div>
+        <div class="article-content">
+          <p>
+            As an Electrical Engineer, my focus is primarily on hardware, but understanding how software interfaces with the CPU is crucial. To bridge this gap, I developed an <strong>OS Process and Resource Manager</strong>—a User-Space Operating System Simulator written entirely in C++.
+          </p>
+          <h3>Core Mechanisms Modeled</h3>
+          <p>
+            Operating systems are massive, complex beasts. For this simulator, I focused strictly on the core kernel responsibilities:
+          </p>
+          <ul>
+            <li><strong>Process States:</strong> Implemented a state machine for processes transitioning between <code>New</code>, <code>Ready</code>, <code>Running</code>, <code>Waiting</code>, and <code>Terminated</code>.</li>
+            <li><strong>Context Switching:</strong> Simulated saving and loading the CPU registers (Process Control Block - PCB) when swapping out processes.</li>
+            <li><strong>Resource Allocation:</strong> Implemented Banker's Algorithm to handle simulated memory and peripheral requests, ensuring the system never enters a deadlock state.</li>
+          </ul>
+          <h3>Data Structures & Algorithms</h3>
+          <p>
+            Efficiency was key. I utilized custom queue structures to manage the Ready Queue and Waiting Queues. The scheduling algorithm utilized was a simulated Round-Robin with dynamic time-quantums, adjusting based on whether the process was I/O bound or CPU bound.
+          </p>
+          <p>
+            By building this simulator, the abstract concepts of CPU scheduling, mutexes, semaphores, and memory paging became concrete logic in my mind. It heavily influences how I write firmware today, ensuring my microcontroller code is non-blocking and resource-efficient.
+          </p>
+        </div>
+      </article>
+
+      <!-- ARTICLE 4 -->
+      <article class="blog-article" id="ai-internship">
+        <div class="article-meta">
+          <span class="article-tag">AI / Machine Learning</span>
+          <span><i class="fa-regular fa-calendar"></i> September 2025</span>
+          <span><i class="fa-regular fa-clock"></i> 4 min read</span>
+        </div>
+        <h2 class="article-title">Lessons Learned: My AI Internship at CyberGen</h2>
+        <div class="article-image" style="background: linear-gradient(135deg, #FF416C, #FF4B2B);">
+          <i class="fa-solid fa-brain"></i>
+        </div>
+        <div class="article-content">
+          <p>
+            During the summer of 2025 (July - August), I had the privilege of joining <strong>CyberGen</strong> as an AI Intern. It was an eye-opening experience that took my theoretical knowledge of Python and Machine Learning and subjected it to the rigors of real-world corporate demands.
+          </p>
+          <h3>What I Worked On</h3>
+          <p>
+            My primary responsibility was assisting the senior engineering team with AI-based tasks and workflow automation. Much of the data processing tasks that took hours were ripe for automation. I developed Python scripts utilizing Pandas and NumPy to clean and preprocess massive datasets before they were fed into the training pipelines.
+          </p>
+          <p>
+            Furthermore, I gained hands-on experience evaluating the outputs of Large Language Models (LLMs) to ensure response accuracy and safety compliance for internal tooling. 
+          </p>
+          <h3>The Biggest Takeaway</h3>
+          <p>
+            The most valuable lesson wasn't a specific coding framework, but rather the importance of <strong>data quality</strong>. An AI model is only as intelligent as the data it trains on. Garbage in, garbage out. My time at CyberGen taught me to rigorously validate datasets and treat data engineering with the same respect as algorithm design.
+          </p>
+        </div>
+      </article>
+
+      <!-- ARTICLE 5 -->
+      <article class="blog-article" id="proteus-circuit">
+        <div class="article-meta">
+          <span class="article-tag">Circuit Design</span>
+          <span><i class="fa-regular fa-calendar"></i> July 2025</span>
+          <span><i class="fa-regular fa-clock"></i> 5 min read</span>
+        </div>
+        <h2 class="article-title">Practical Analog Automation: Proteus Circuit Simulations</h2>
+        <div class="article-image" style="background: linear-gradient(135deg, #f12711, #f5af19);">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div class="article-content">
+          <p>
+            Before soldering a single component, a robust circuit design must be simulated and stressed. I frequently use <strong>Proteus</strong> to validate my analog designs. Two of my favorite foundational analog projects are the Automatic Street Light System and the Temperature Controlled Fan.
+          </p>
+          <h3>The Automatic Street Light</h3>
+          <p>
+            This project entirely avoids microcontrollers. It relies purely on the physics of an <strong>LDR (Light Dependent Resistor)</strong> and the switching properties of BJT transistors. 
+            By setting up the LDR in a voltage divider configuration with a variable potentiometer, I created a tunable threshold. As ambient light drops, the LDR resistance spikes, altering the voltage at the transistor's base. Once the base-emitter voltage exceeds ~0.7V, the transistor saturates, triggering a relay that powers the street lamp. It's an elegant, highly reliable, and cheap analog solution.
+          </p>
+          <h3>The Temperature Controlled Fan</h3>
+          <p>
+            Similar in philosophy, this circuit utilizes an NTC Thermistor or an LM35 sensor. Using an Operational Amplifier (Op-Amp) configured as a comparator, the circuit compares the voltage from the temperature sensor against a reference voltage (set by a potentiometer). 
+          </p>
+          <p>
+            When the temperature crosses the threshold, the Op-Amp outputs high, driving a MOSFET which in turn spins up a DC cooling fan. 
+          </p>
+          <blockquote>
+            These projects reinforce a core engineering philosophy: don't use a $5 microcontroller when a $0.10 Op-Amp and a sensor can do the job with zero latency and infinite reliability.
+          </blockquote>
+        </div>
+      </article>
+
+    </main>
+
+    <!-- ══════════════════════════════════════════════
+     FOOTER
+    ══════════════════════════════════════════════ -->
+    <footer>
+      <div class="container">
+        <div class="footer-inner">
+          <span class="footer-kicker">LET'S CONNECT</span>
+          <h2 class="footer-title">Get In Touch</h2>
+          <p class="footer-description">
+            Open to research collaborations, industry partnerships, speaking
+            engagements, and training programs.
+          </p>
+
+          <div class="footer-actions">
+            <a
+              href="mailto:zainabbasm416@gmail.com"
+              class="footer-contact-card footer-contact-card-primary"
+            >
+              <div class="lm-border-layer"></div>
+              <div class="lm-inner">
+                <div class="lm-icon">
+                  <i class="fa-regular fa-envelope"></i>
+                </div>
+                <div class="lm-content">
+                  <strong>zainabbasm416@gmail.com</strong>
+                  <span>Email me directly</span>
+                </div>
+              </div>
+            </a>
+
+            <a href="index.html#contact" class="footer-contact-card">
+              <div class="lm-border-layer"></div>
+              <div class="lm-inner">
+                <div class="lm-icon">
+                  <i class="fa-solid fa-message"></i>
+                </div>
+                <div class="lm-content">
+                  <strong>Open Contact Form</strong>
+                  <span>Send a message on the site</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="footer-bottom">
+            <p>
+              © 2026 Zain Abbas. Crafted with
+              <i class="fa-solid fa-bolt" style="color: var(--accent)"></i>
+              passion.
+            </p>
+
+            <div class="footer-socials">
+              <a
+                href="https://github.com/F236108"
+                target="_blank"
+                rel="noopener"
+                class="social-icon-btn"
+                title="GitHub"
+                ><i class="fa-brands fa-github"></i
+              ></a>
+              <a
+                href="https://www.linkedin.com/in/zain-abbas102"
+                target="_blank"
+                rel="noopener"
+                class="social-icon-btn"
+                title="LinkedIn"
+                ><i class="fa-brands fa-linkedin-in"></i
+              ></a>
+              <a
+                href="mailto:zainabbasm416@gmail.com"
+                class="social-icon-btn"
+                title="Email"
+                ><i class="fa-regular fa-envelope"></i
+              ></a>
+              <a href="tel:+923464040192" class="social-icon-btn" title="Phone"
+                ><i class="fa-solid fa-phone"></i
+              ></a>
+              <a
+                href="https://wa.me/923464040192"
+                target="_blank"
+                rel="noopener"
+                class="social-icon-btn"
+                title="WhatsApp"
+                ><i class="fa-brands fa-whatsapp"></i
+              ></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Main JS (Shared spotlight/theme/mobile scripts) -->
+    <script src="script.js"></script>
+  </body>
+</html>
