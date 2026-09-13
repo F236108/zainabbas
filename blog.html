@@ -24,7 +24,7 @@
     <style>
       /* Blog Page Specific Styles */
       .blog-page-hero {
-        padding: 150px 0 80px;
+        padding: 140px 0 60px;
         background: linear-gradient(to bottom, var(--bg) 0%, var(--bg-secondary) 100%);
         text-align: center;
         border-bottom: 1px solid var(--border);
@@ -45,14 +45,15 @@
         pointer-events: none;
       }
       .blog-page-title {
-        font-size: 3.5rem;
+        font-size: clamp(2rem, 6vw, 3.5rem);
         font-weight: 800;
         margin-bottom: 1rem;
         position: relative;
         z-index: 1;
+        line-height: 1.15;
       }
       .blog-page-subtitle {
-        font-size: 1.2rem;
+        font-size: clamp(0.95rem, 2.5vw, 1.2rem);
         color: var(--fg-muted);
         max-width: 600px;
         margin: 0 auto;
@@ -63,17 +64,18 @@
       .blog-container {
         max-width: 800px;
         margin: 0 auto;
-        padding: 4rem 1.5rem;
+        padding: 3.5rem 1.5rem;
+        width: 100%;
       }
       
       .blog-article {
-        margin-bottom: 6rem;
+        margin-bottom: 5rem;
         position: relative;
       }
       .blog-article:not(:last-child)::after {
         content: '';
         position: absolute;
-        bottom: -3rem;
+        bottom: -2.5rem;
         left: 0;
         width: 100%;
         height: 1px;
@@ -83,10 +85,11 @@
       .article-meta {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
-        font-size: 0.9rem;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        font-size: 0.875rem;
         color: var(--fg-muted);
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
       }
       .article-tag {
         background: rgba(255,49,49,0.1);
@@ -100,41 +103,48 @@
       }
       
       .article-title {
-        font-size: 2.5rem;
+        font-size: clamp(1.4rem, 4.5vw, 2.5rem);
         font-weight: 800;
         margin-bottom: 1.5rem;
-        line-height: 1.2;
+        line-height: 1.25;
         color: var(--fg);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
       
       .article-content p {
-        font-size: 1.1rem;
+        font-size: clamp(0.975rem, 2vw, 1.1rem);
         line-height: 1.8;
         color: var(--fg-muted);
         margin-bottom: 1.5rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
       .article-content h3 {
-        font-size: 1.5rem;
-        margin: 2.5rem 0 1rem;
+        font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+        margin: 2.25rem 0 1rem;
         color: var(--fg);
+        line-height: 1.3;
       }
       .article-content ul {
         margin-bottom: 1.5rem;
         padding-left: 1.5rem;
       }
       .article-content li {
-        font-size: 1.1rem;
+        font-size: clamp(0.975rem, 2vw, 1.1rem);
         line-height: 1.8;
         color: var(--fg-muted);
         margin-bottom: 0.5rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
       
       /* Blockquote style */
       .article-content blockquote {
         border-left: 4px solid var(--accent);
         background: var(--bg-card);
-        padding: 1.5rem;
-        margin: 2rem 0;
+        padding: 1.25rem 1.5rem;
+        margin: 1.75rem 0;
         border-radius: 0 var(--radius-md) var(--radius-md) 0;
         font-style: italic;
       }
@@ -142,13 +152,13 @@
       /* Image placeholders */
       .article-image {
         width: 100%;
-        height: 300px;
+        height: clamp(180px, 40vw, 300px);
         border-radius: var(--radius-lg);
         background: var(--bg-card);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 4rem;
+        font-size: clamp(2.5rem, 8vw, 4rem);
         color: rgba(255,255,255,0.1);
         margin-bottom: 2rem;
         border: 1px solid var(--border);
@@ -160,10 +170,12 @@
       .article-content .blog-figure {
         margin: 2rem 0;
         text-align: center;
+        width: 100%;
       }
       .article-content .blog-figure img {
         width: 100%;
-        max-width: 720px;
+        max-width: 100%;
+        height: auto;
         border-radius: var(--radius-lg);
         border: 1px solid var(--border);
         background: var(--bg-card);
@@ -171,26 +183,34 @@
         transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
       .article-content .blog-figure img:hover {
-        transform: scale(1.02);
+        transform: scale(1.015);
         box-shadow: 0 12px 40px rgba(0,0,0,0.4);
       }
       .article-content .blog-figure figcaption {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: var(--fg-muted);
-        margin-top: 0.75rem;
+        margin-top: 0.65rem;
         font-style: italic;
+        padding: 0 0.5rem;
       }
 
-      /* Blog tables */
+      /* Blog tables container & table styles */
+      .article-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 1.5rem 0;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+      }
       .article-content table {
         width: 100%;
+        min-width: 540px;
         border-collapse: collapse;
-        margin: 1.5rem 0;
-        font-size: 0.95rem;
-        background: var(--bg-card);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        border: 1px solid var(--border);
+        margin: 0;
+        font-size: 0.9rem;
+        background: transparent;
       }
       .article-content th {
         background: rgba(255,49,49,0.1);
@@ -198,9 +218,10 @@
         padding: 0.75rem 1rem;
         text-align: left;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.03em;
+        white-space: nowrap;
       }
       .article-content td {
         padding: 0.65rem 1rem;
@@ -217,8 +238,9 @@
         color: var(--accent);
         padding: 0.15rem 0.45rem;
         border-radius: 4px;
-        font-size: 0.9em;
+        font-size: 0.88em;
         font-family: 'Courier New', monospace;
+        word-break: break-word;
       }
 
       /* Web UI screenshot image */
@@ -233,6 +255,54 @@
         width: 100%;
         height: auto;
         display: block;
+      }
+
+      /* Media Queries for responsive adjustments */
+      @media (max-width: 768px) {
+        .blog-page-hero {
+          padding: 110px 1rem 45px;
+        }
+        .blog-container {
+          padding: 2.5rem 1.25rem;
+        }
+        .blog-article {
+          margin-bottom: 4rem;
+        }
+        .blog-article:not(:last-child)::after {
+          bottom: -2rem;
+        }
+        .article-content blockquote {
+          padding: 1rem 1.1rem;
+          margin: 1.5rem 0;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .blog-page-hero {
+          padding: 95px 0.85rem 35px;
+        }
+        .blog-container {
+          padding: 1.75rem 0.85rem;
+        }
+        .blog-article {
+          margin-bottom: 3rem;
+        }
+        .article-meta {
+          gap: 0.4rem 0.75rem;
+          font-size: 0.8rem;
+        }
+        .article-content ul {
+          padding-left: 1rem;
+        }
+        .article-content blockquote {
+          padding: 0.85rem 1rem;
+          margin: 1.25rem 0;
+          border-left-width: 3px;
+          font-size: 0.9rem;
+        }
+        .article-content .blog-figure img {
+          padding: 0.25rem;
+        }
       }
     </style>
   </head>
@@ -351,24 +421,26 @@
             <li><strong>Hourly Resampling:</strong> The 15-minute merged generation and weather readings were resampled to <strong>hourly arithmetic means</strong>, producing a clean dataset of <strong>796 hourly rows</strong>.</li>
           </ul>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Metric / Parameter</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Raw generation rows (Plant 1)</td><td>68,778</td></tr>
-              <tr><td>Raw sensor rows (Plant 1)</td><td>3,182</td></tr>
-              <tr><td>Timestamps present in only one file</td><td>26</td></tr>
-              <tr><td>Hourly rows after resampling</td><td>796</td></tr>
-              <tr><td>Hourly rows with missing values</td><td>0</td></tr>
-              <tr><td>Open-Meteo weather rows downloaded</td><td>816</td></tr>
-              <tr><td>Correlation (Sensor vs Open-Meteo)</td><td><strong>0.9333</strong></td></tr>
-              <tr><td>Peak Hour Comparison</td><td><strong>12:00 PM</strong> (Identical)</td></tr>
-            </tbody>
-          </table>
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Metric / Parameter</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Raw generation rows (Plant 1)</td><td>68,778</td></tr>
+                <tr><td>Raw sensor rows (Plant 1)</td><td>3,182</td></tr>
+                <tr><td>Timestamps present in only one file</td><td>26</td></tr>
+                <tr><td>Hourly rows after resampling</td><td>796</td></tr>
+                <tr><td>Hourly rows with missing values</td><td>0</td></tr>
+                <tr><td>Open-Meteo weather rows downloaded</td><td>816</td></tr>
+                <tr><td>Correlation (Sensor vs Open-Meteo)</td><td><strong>0.9333</strong></td></tr>
+                <tr><td>Peak Hour Comparison</td><td><strong>12:00 PM</strong> (Identical)</td></tr>
+              </tbody>
+            </table>
+          </div>
 
           <h3>3. Exploratory Data Analysis (EDA)</h3>
           <p>
@@ -448,46 +520,50 @@
           </figure>
 
           <p><strong>Test-Set RMSE Performance (kW):</strong></p>
-          <table>
-            <thead>
-              <tr>
-                <th>Feature Set</th>
-                <th>Solver Method</th>
-                <th>Train RMSE</th>
-                <th>Test RMSE (All)</th>
-                <th>Test RMSE (Day)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Set A (Sensors)</td><td>Normal Equation</td><td>537.62</td><td>539.46</td><td><strong>704.46</strong></td></tr>
-              <tr><td>Set A (Sensors)</td><td>Batch GD (α=0.001)</td><td>741.84</td><td>880.25</td><td>1,144.76</td></tr>
-              <tr><td>Set A (Sensors)</td><td>SGD (α=0.01)</td><td>539.93</td><td>549.47</td><td>714.47</td></tr>
-              <tr><td>Set B (Public)</td><td>Normal Equation</td><td>2,699.92</td><td>2,620.94</td><td><strong>3,409.50</strong></td></tr>
-              <tr><td>Set B (Public)</td><td>Batch GD (α=0.1)</td><td>2,699.92</td><td>2,620.94</td><td>3,409.50</td></tr>
-              <tr><td>Set B (Public)</td><td>SGD (α=0.01)</td><td>2,744.92</td><td>2,699.92</td><td>3,453.25</td></tr>
-            </tbody>
-          </table>
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feature Set</th>
+                  <th>Solver Method</th>
+                  <th>Train RMSE</th>
+                  <th>Test RMSE (All)</th>
+                  <th>Test RMSE (Day)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Set A (Sensors)</td><td>Normal Equation</td><td>537.62</td><td>539.46</td><td><strong>704.46</strong></td></tr>
+                <tr><td>Set A (Sensors)</td><td>Batch GD (α=0.001)</td><td>741.84</td><td>880.25</td><td>1,144.76</td></tr>
+                <tr><td>Set A (Sensors)</td><td>SGD (α=0.01)</td><td>539.93</td><td>549.47</td><td>714.47</td></tr>
+                <tr><td>Set B (Public)</td><td>Normal Equation</td><td>2,699.92</td><td>2,620.94</td><td><strong>3,409.50</strong></td></tr>
+                <tr><td>Set B (Public)</td><td>Batch GD (α=0.1)</td><td>2,699.92</td><td>2,620.94</td><td>3,409.50</td></tr>
+                <tr><td>Set B (Public)</td><td>SGD (α=0.01)</td><td>2,744.92</td><td>2,699.92</td><td>3,453.25</td></tr>
+              </tbody>
+            </table>
+          </div>
 
           <p><strong>Learned Weight Vector (θ) for Set A:</strong></p>
-          <table>
-            <thead>
-              <tr>
-                <th>Feature</th>
-                <th>Normal Eq</th>
-                <th>Batch GD</th>
-                <th>SGD</th>
-                <th>Interpretation</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Intercept (x₀=1)</td><td>+6,890.57</td><td>+6,890.57</td><td>+6,876.12</td><td>Mean baseline plant power</td></tr>
-              <tr><td><code>irradiation</code></td><td>+8,345.04</td><td>+8,345.04</td><td>+8,312.45</td><td><strong>Primary Driver (+)</strong></td></tr>
-              <tr><td><code>module_temp</code></td><td>-108.12</td><td>-108.12</td><td>-104.30</td><td><strong>Thermal Efficiency Drop (−)</strong></td></tr>
-              <tr><td><code>ambient_temp</code></td><td>-17.16</td><td>-17.16</td><td>-15.80</td><td>Minor ambient coupling</td></tr>
-              <tr><td><code>sin_hour</code></td><td>-47.38</td><td>-47.38</td><td>-42.10</td><td>AM/PM asymmetry correction</td></tr>
-              <tr><td><code>cos_hour</code></td><td>-416.56</td><td>-416.56</td><td>-410.20</td><td>Diurnal cycle suppression</td></tr>
-            </tbody>
-          </table>
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Normal Eq</th>
+                  <th>Batch GD</th>
+                  <th>SGD</th>
+                  <th>Interpretation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Intercept (x₀=1)</td><td>+6,890.57</td><td>+6,890.57</td><td>+6,876.12</td><td>Mean baseline plant power</td></tr>
+                <tr><td><code>irradiation</code></td><td>+8,345.04</td><td>+8,345.04</td><td>+8,312.45</td><td><strong>Primary Driver (+)</strong></td></tr>
+                <tr><td><code>module_temp</code></td><td>-108.12</td><td>-108.12</td><td>-104.30</td><td><strong>Thermal Efficiency Drop (−)</strong></td></tr>
+                <tr><td><code>ambient_temp</code></td><td>-17.16</td><td>-17.16</td><td>-15.80</td><td>Minor ambient coupling</td></tr>
+                <tr><td><code>sin_hour</code></td><td>-47.38</td><td>-47.38</td><td>-42.10</td><td>AM/PM asymmetry correction</td></tr>
+                <tr><td><code>cos_hour</code></td><td>-416.56</td><td>-416.56</td><td>-410.20</td><td>Diurnal cycle suppression</td></tr>
+              </tbody>
+            </table>
+          </div>
 
           <h3>6. On-Site Sensors vs. Public Weather Data</h3>
           <ul>

@@ -2622,6 +2622,9 @@ footer::after {
   .blog-featured-img {
     height: 200px;
   }
+  .blog-newsletter {
+    padding: 2rem 1.25rem;
+  }
 }
 @media (max-width: 480px) {
   /* Stack stats vertically only on very small screens */
@@ -2636,6 +2639,12 @@ footer::after {
   }
   .hero-stat:not(:last-child)::after {
     display: none;
+  }
+  .blog-grid {
+    grid-template-columns: 1fr;
+  }
+  .blog-newsletter {
+    padding: 1.5rem 1rem;
   }
 }
 /* ══════════════════════════════════════════════
