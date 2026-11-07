@@ -243,6 +243,26 @@
         word-break: break-word;
       }
 
+      /* Preformatted code blocks */
+      .article-content pre {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.86rem;
+        line-height: 1.6;
+        color: var(--fg);
+        margin: 1.5rem 0;
+      }
+      .article-content pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+        border-radius: 0;
+      }
+
       /* Web UI screenshot image */
       .article-image-real {
         width: 100%;
@@ -380,6 +400,401 @@
      MAIN CONTENT
 ══════════════════════════════════════════════ -->
     <main class="blog-container">
+
+      <!-- ARTICLE: ECGNET HEARTBEAT CLASSIFICATION -->
+      <article class="blog-article" id="ecgnet-classification">
+        <div class="article-meta">
+          <span class="article-tag">Deep Learning &amp; Health</span>
+          <span><i class="fa-regular fa-calendar"></i> November 2026</span>
+          <span><i class="fa-regular fa-clock"></i> 14 min read</span>
+          <span><a href="https://github.com/F236108/ecgnet-heartbeat-classification-scratch" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 600;"><i class="fa-brands fa-github"></i> GitHub Repo</a></span>
+        </div>
+        <h2 class="article-title">Classifying Heartbeats from ECG Signals: A Deep Neural Network Built &amp; Trained from Scratch in PyTorch</h2>
+        <div class="article-image-real">
+          <img src="Images/blog/ecgnet/frontend_screenshot.png" alt="ECGNet Real-Time Classification Dashboard and Neural Network Telemetry" loading="lazy" />
+        </div>
+        <div class="article-content">
+          <p>
+            <em>Evaluating cardiac arrhythmias from first principles with pure tensor math, hand-derived backpropagation gradients, custom numerical optimizers, and a critical look at why balanced accuracy matters over raw accuracy on imbalanced clinical datasets.</em>
+          </p>
+
+          <h3>1. Executive Summary &amp; The Clinical Challenge</h3>
+          <p>
+            The human heart is an autonomous, electromechanically synchronized pump. Every heartbeat is initiated by a wave of electrical depolarisation originating at the sinoatrial (SA) node, propagating sequentially through the atria, the atrioventricular (AV) node, the bundle of His, and the Purkinje network into the ventricles. An <strong>Electrocardiogram (ECG)</strong> records these microvolt-to-millivolt surface potentials across time, generating the signature <strong>P-QRS-T waveform</strong>:
+          </p>
+
+          <pre><code>       R (Ventricular Depolarisation)
+       /\
+      /  \
+ P   /    \       T (Ventricular Repolarisation)
+/\  /      \     /\
+--\/--------\---/--\------ Isoelectric Baseline
+  Q          S</code></pre>
+
+          <ul>
+            <li><strong>P Wave:</strong> Atrial depolarisation initiating atrial contraction.</li>
+            <li><strong>QRS Complex:</strong> Rapid ventricular depolarisation triggering powerful mechanical ventricular ejection.</li>
+            <li><strong>T Wave:</strong> Ventricular repolarisation restoring resting electrical equilibrium.</li>
+          </ul>
+
+          <p>
+            When structural myocardial disease, localized ischemia, or ectopic pacemaker foci disrupt this electrical circuit, the heart enters an <strong>arrhythmia</strong>. Premature Ventricular Contractions (PVCs) can trigger catastrophic ventricular tachycardia or fatal ventricular fibrillation within seconds. Continuous automated detection in intensive care units (ICUs) and wearable holter monitors is life-critical.
+          </p>
+
+          <p>
+            In this project, we formulate and address a foundational engineering question:
+          </p>
+
+          <blockquote>
+            "How well does a small neural network recognise each distinct type of heartbeat, and is overall accuracy the right number to trust when healthy beats heavily dominate clinical datasets?"
+          </blockquote>
+
+          <p>
+            To answer this rigorously, we design, derive, train, and validate a 3-layer deep neural network (<strong>ECGNet</strong>) completely from scratch in PyTorch—enforcing a strict zero-abstraction constraint (no <code>nn.Linear</code>, no <code>nn.Sequential</code>, no <code>nn.ReLU</code>, no <code>torch.optim</code>, and no high-level loss functions).
+          </p>
+
+          <p><strong>The Core Dilemma: Raw Accuracy vs. Balanced Accuracy</strong></p>
+          <p>
+            In our holdout test set of <strong>21,892 real patient heartbeats</strong> from the MIT-BIH Arrhythmia Database, <strong>18,118 beats (82.76%) are Normal</strong>, while life-threatening Ventricular Ectopic beats make up only 6.61%, and Fusion beats account for just 0.74%.
+          </p>
+          <p>
+            Consider a trivial "Always-Normal" baseline classifier that unconditionally predicts Class N for every incoming signal without performing any computation:
+          </p>
+
+          <pre><code>Accuracy(Always-N Baseline) = 18,118 / 21,892 = 82.76%</code></pre>
+
+          <p>
+            On paper, 82.76% appears respectable. In an ICU setting, however, this baseline monitor would <strong>miss 100% of ventricular ectopic arrhythmias and 100% of supraventricular contractions</strong>, leading to fatal clinical consequences. To evaluate real clinical discrimination, we compute both <strong>Overall Accuracy</strong> and <strong>Balanced Accuracy</strong> (the unweighted mean of per-class sensitivities):
+          </p>
+
+          <pre><code>Accuracy = (1 / m) &Sigma; 1[y_hat == y]
+Balanced Accuracy = (1 / 5) &Sigma; [ Accuracy(c) ]  for c &isin; {N, S, V, F, Q}</code></pre>
+
+          <p>
+            Our from-scratch network achieves <strong>97.82% overall test accuracy</strong> and <strong>83.65% balanced accuracy</strong>, delivering robust true positive sensitivity across rare pathological beats.
+          </p>
+
+          <h3>2. Dataset, Splitting Protocol &amp; Morphological Anatomy</h3>
+          <p>
+            We utilized the standard MIT-BIH Arrhythmia benchmark dataset curated by Shayan Fazeli on Kaggle. Each heartbeat is segmented around the R-peak, resampled to <code>f<sub>s</sub> = 125 Hz</code>, zero-padded to a uniform vector length of <strong>187 temporal voltage samples</strong> (&sim;1.5 seconds), and normalized between <code>0.0</code> and <code>1.0</code>.
+          </p>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/ecgnet/example_beats.png" alt="Morphological Comparison Across 5 Heartbeat Classes" loading="lazy" />
+            <figcaption>Figure 1: Morphological signatures across the five AAMI heartbeat categories (187 voltage samples at 125 Hz).</figcaption>
+          </figure>
+
+          <p><strong>Morphological Waveform Anatomy:</strong></p>
+          <ul>
+            <li><strong>Class N (Normal Beat):</strong> Sharp, narrow QRS complex preceded by a well-defined P wave and followed by an isoelectric ST segment and positive T wave.</li>
+            <li><strong>Class S (Supraventricular Ectopic):</strong> Originates above the ventricles (atria or AV node). Because depolarisation travels through the normal His-Purkinje system, its QRS duration is almost normal; distinguishing S from N hinges on premature timing and subtle P-wave distortions.</li>
+            <li><strong>Class V (Ventricular Ectopic / PVC):</strong> Originates directly in ventricular myocardium. Conduction crawls through slow muscle-to-muscle pathways, creating a wide, bizarre, high-amplitude, often biphasic QRS complex with discordant T waves.</li>
+            <li><strong>Class F (Fusion Beat):</strong> Simultaneous ventricular depolarisation from both the normal supraventricular pathway and an ectopic ventricular pacemaker, yielding an intermediate hybrid waveform.</li>
+            <li><strong>Class Q (Unknown / Paced Beat):</strong> Characterized by sharp, high-frequency artificial pacemaker spikes followed by delayed, wide ventricular depolarisation.</li>
+          </ul>
+
+          <p><strong>Strict Deterministic Splitting Protocol:</strong></p>
+          <p>
+            The training file of 87,554 rows was partitioned into <strong>90% Training (78,799 rows)</strong> and <strong>10% Validation (8,755 rows)</strong> using a fixed pseudorandom seed (<code>np.random.default_rng(42)</code>). The independent test dataset (<strong>21,892 rows</strong>) remained completely sealed throughout model architecture selection, hyperparameter sweeps, and epoch tuning.
+          </p>
+
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Dataset Partition / Class</th>
+                  <th>Training (90%)</th>
+                  <th>Validation (10%)</th>
+                  <th>Holdout Test Set</th>
+                  <th>Clinical Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>N – Normal</strong></td><td>65,224 (82.77%)</td><td>7,247 (82.78%)</td><td>18,118 (82.76%)</td><td>Healthy sinus rhythm, bundle branch blocks</td></tr>
+                <tr><td><strong>S – Supraventricular</strong></td><td>2,001 (2.54%)</td><td>222 (2.54%)</td><td>556 (2.54%)</td><td>Atrial or junctional premature contractions</td></tr>
+                <tr><td><strong>V – Ventricular Ectopic</strong></td><td>5,209 (6.61%)</td><td>579 (6.61%)</td><td>1,448 (6.61%)</td><td>Premature ventricular contractions (PVCs)</td></tr>
+                <tr><td><strong>F – Fusion</strong></td><td>577 (0.73%)</td><td>64 (0.73%)</td><td>162 (0.74%)</td><td>Hybrid sinus &amp; ventricular activation</td></tr>
+                <tr><td><strong>Q – Paced / Unknown</strong></td><td>5,788 (7.35%)</td><td>643 (7.34%)</td><td>1,608 (7.35%)</td><td>Pacemaker spikes, unclassifiable beats</td></tr>
+                <tr><td><strong>Total Rows</strong></td><td><strong>78,799</strong></td><td><strong>8,755</strong></td><td><strong>21,892</strong></td><td><strong>109,446 Total Heartbeats</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>3. Network Topology &amp; Parameter Count Derivation</h3>
+          <p>
+            To examine deep learning mechanics without framework shielding, our architecture (<code>ECGNet</code>) relies exclusively on raw 2D tensor weight matrices and 1D bias vectors registered as <code>nn.Parameter</code>.
+          </p>
+
+          <p><strong>Layer Dimensions &amp; Mathematical Forward Pass:</strong></p>
+          <ul>
+            <li><strong>Input Dimension (n<sup>[0]</sup>):</strong> 187 temporal voltage points.</li>
+            <li><strong>Hidden Layer 1 (n<sup>[1]</sup>):</strong> 128 units, activated by custom clamped ReLU:
+              <code>A<sup>[1]</sup> = clamp(X W<sup>[1]T</sup> + 1<sub>B</sub> b<sup>[1]T</sup>, min=0)</code>
+            </li>
+            <li><strong>Hidden Layer 2 (n<sup>[2]</sup>):</strong> 64 units, activated by custom clamped ReLU:
+              <code>A<sup>[2]</sup> = clamp(A<sup>[1]</sup> W<sup>[2]T</sup> + 1<sub>B</sub> b<sup>[2]T</sup>, min=0)</code>
+            </li>
+            <li><strong>Output Layer (n<sup>[3]</sup>):</strong> 5 linear logits corresponding to classes {N, S, V, F, Q}:
+              <code>Z<sup>[3]</sup> = A<sup>[2]</sup> W<sup>[3]T</sup> + 1<sub>B</sub> b<sup>[3]T</sup></code>
+            </li>
+          </ul>
+
+          <p><strong>Exact Analytical Parameter Derivation:</strong></p>
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Layer</th>
+                  <th>Weight Matrix Shape</th>
+                  <th>Bias Shape</th>
+                  <th>Weight Count</th>
+                  <th>Bias Count</th>
+                  <th>Total Layer Parameters</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Hidden Layer 1</strong></td><td>128 &times; 187</td><td>128</td><td>128 &times; 187 = 23,936</td><td>128</td><td><strong>24,064</strong></td></tr>
+                <tr><td><strong>Hidden Layer 2</strong></td><td>64 &times; 128</td><td>64</td><td>64 &times; 128 = 8,192</td><td>64</td><td><strong>8,256</strong></td></tr>
+                <tr><td><strong>Output Layer 3</strong></td><td>5 &times; 64</td><td>5</td><td>5 &times; 64 = 320</td><td>5</td><td><strong>325</strong></td></tr>
+                <tr><td><strong>Total Trainable</strong></td><td>—</td><td>—</td><td><strong>32,448 Weights</strong></td><td><strong>197 Biases</strong></td><td><strong>32,645 Parameters</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p><strong>He (Kaiming) Normal Weight Initialization:</strong></p>
+          <p>
+            All weight matrices are initialized from a zero-mean Gaussian distribution with standard deviation scaled by the input fan-in:
+          </p>
+          <pre><code>W<sup>[&ell;]</sup><sub>ij</sub> ~ N(0, &sigma; = sqrt(2 / n<sup>[&ell;-1]</sup>)),    b<sup>[&ell;]</sup> = 0</code></pre>
+          <p>
+            <em>Why is this mathematically essential?</em>
+          </p>
+          <ul>
+            <li><strong>Symmetry Breaking:</strong> Initializing weights to zero causes every hidden unit to compute identical activations (<code>z = 0</code>) and receive identical backpropagated gradients. The hidden layer acts as a single scalar neuron, permanently bottlenecking representational capacity.</li>
+            <li><strong>Variance Preservation under ReLU:</strong> Standard Xavier initialization (<code>&sigma;<sup>2</sup> = 1/n<sub>in</sub></code>) assumes linear activations. ReLU zeroes out all negative activations (&sim;50% of incoming signals), cutting activation variance in half. He initialization doubles the variance (<code>&sigma;<sup>2</sup> = 2/n<sub>in</sub></code>), ensuring constant signal power and preventing gradient decay across feedforward layers.</li>
+          </ul>
+
+          <h3>4. Numerically Stable Loss &amp; Analytical Gradient Verification</h3>
+          <p>
+            For a mini-batch matrix of logits <code>Z &isin; &reals;<sup>B &times; 5</sup></code> and ground-truth targets <code>y &isin; {0, &hellip;, 4}<sup>B</sup></code>, naive evaluation of cross-entropy via <code>exp(z)</code> can cause arithmetic overflow in 32-bit floating point when <code>z &gt; 88</code>. We implemented numerically stable softmax cross-entropy using the <strong>LogSumExp trick</strong>:
+          </p>
+
+          <pre><code>log &Sigma; exp(z_j) = c + log &Sigma; exp(z_j - c),    where c = max_j(z_j)
+J = (1 / B) &Sigma; [ -Z<sup>[3]</sup><sub>i, y_i</sub> + logsumexp(Z<sup>[3]</sup><sub>i, :</sub>) ]</code></pre>
+
+          <p>
+            <strong>Initial Loss Theoretical Sanity Check:</strong> At step 0 with random Gaussian weights and zero biases, each of the 5 classes is approximately equiprobable (<code>P &approx; 0.20</code>):
+          </p>
+          <pre><code>E[J<sub>init</sub>] &approx; -ln(1 / 5) = ln(5) &approx; 1.609438</code></pre>
+          <p>
+            Our measured empirical initial loss before training was <strong>1.741343</strong>, providing immediate mathematical confirmation of correct loss scaling.
+          </p>
+
+          <p><strong>Analytical Backpropagation Gradient Verification:</strong></p>
+          <p>
+            To verify PyTorch's automatic differentiation engine and prove our forward implementation, we derived the Layer 3 analytical gradients by hand using vector calculus:
+          </p>
+          <pre><code>dJ / dZ<sup>[3]</sup> = (1 / B) (Y_hat - Y)
+dJ / dW<sup>[3]</sup> = (1 / B) (Y_hat - Y)<sup>T</sup> A<sup>[2]</sup>
+dJ / db<sup>[3]</sup> = (1 / B) &Sigma; (y_hat<sup>(i)</sup> - y<sup>(i)</sup>)</code></pre>
+
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  <th>Maximum Absolute Difference |Grad<sub>hand</sub> - Grad<sub>autograd</sub>|</th>
+                  <th>Tolerance Threshold</th>
+                  <th>Verification Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Weight Matrix W<sup>[3]</sup></strong></td><td><strong>2.98 &times; 10<sup>-8</sup></strong></td><td>&lt; 1.0 &times; 10<sup>-5</sup></td><td><strong style="color: #4ade80;">PASSED (8 Decimal Precision)</strong></td></tr>
+                <tr><td><strong>Bias Vector b<sup>[3]</sup></strong></td><td><strong>5.96 &times; 10<sup>-8</sup></strong></td><td>&lt; 1.0 &times; 10<sup>-5</sup></td><td><strong style="color: #4ade80;">PASSED (8 Decimal Precision)</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>5. Custom Optimizer &amp; Learning Rate Dynamics</h3>
+          <p>
+            Rather than relying on <code>torch.optim.SGD</code>, we engineered a custom parameter update engine featuring <strong>Polyak Momentum (&beta; = 0.9)</strong> and <strong>L<sub>2</sub> Weight Decay (&lambda; = 10<sup>-4</sup>)</strong>:
+          </p>
+
+          <pre><code># Gradient computation with weight decay (weights only)
+g_P = dJ / dP + &lambda; &middot; P   (if P is weight)
+g_P = dJ / dP             (if P is bias)
+
+# Momentum velocity state accumulation
+v_P := &beta; &middot; v_P + (1 - &beta;) &middot; g_P
+
+# Parameter step
+P := P - &alpha; &middot; v_P</code></pre>
+
+          <p><strong>Learning Rate Sweep (&alpha; &isin; {0.01, 0.1, 0.5}):</strong></p>
+          <p>
+            We evaluated three learning rate candidates over 30 epochs with batch size <code>B = 128</code> and full dataset epoch-level reshuffling:
+          </p>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/ecgnet/lr_comparison.png" alt="Validation Loss vs Epoch for Learning Rate Sweep" loading="lazy" />
+            <figcaption>Figure 2: Validation loss trajectories across 30 training epochs for learning rates &alpha; &isin; {0.01, 0.1, 0.5}.</figcaption>
+          </figure>
+
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Learning Rate (&alpha;)</th>
+                  <th>Lowest Validation Loss</th>
+                  <th>Validation Accuracy at Best Epoch</th>
+                  <th>Best Epoch</th>
+                  <th>Optimization Dynamic</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>&alpha; = 0.01</td><td>0.161820</td><td>95.79%</td><td>Epoch 30</td><td>Sluggish; under-steps gradient ravines</td></tr>
+                <tr><td>&alpha; = 0.10</td><td>0.086183</td><td>97.64%</td><td>Epoch 30</td><td>Smooth, consistent downward trajectory</td></tr>
+                <tr><td><strong>&alpha; = 0.50</strong></td><td><strong>0.072164</strong></td><td><strong>97.93%</strong></td><td><strong>Epoch 23</strong></td><td><strong>Fastest convergence; selected optimal model</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/ecgnet/training_curves.png" alt="Training and Validation Loss and Accuracy Curves" loading="lazy" />
+            <figcaption>Figure 3: Training and validation loss (left) and classification accuracy (right) across 30 epochs for the chosen model (&alpha; = 0.50).</figcaption>
+          </figure>
+
+          <p>
+            The selected model achieved <strong>98.16% training accuracy</strong> (loss <code>0.060877</code>) and <strong>97.93% validation accuracy</strong> (loss <code>0.072164</code>) at Epoch 23. Complete training on 78,799 samples across 30 epochs required only <strong>43.9 seconds on standard CPU hardware</strong>.
+          </p>
+
+          <h3>6. Independent Test Set Evaluation &amp; Confusion Matrix</h3>
+          <p>
+            The optimal checkpoint was evaluated once on the unseen test set of <strong>21,892 heartbeats</strong>:
+          </p>
+
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Class Code</th>
+                  <th>Arrhythmia Category</th>
+                  <th>Test Samples</th>
+                  <th>Correct Predictions</th>
+                  <th>Per-Class Accuracy (Sensitivity)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>N</strong></td><td>Normal Beat</td><td>18,118</td><td>18,045</td><td><strong>99.60%</strong></td></tr>
+                <tr><td><strong>S</strong></td><td>Supraventricular Ectopic</td><td>556</td><td>369</td><td><strong>66.37%</strong></td></tr>
+                <tr><td><strong>V</strong></td><td>Ventricular Ectopic (PVC)</td><td>1,448</td><td>1,323</td><td><strong>91.37%</strong></td></tr>
+                <tr><td><strong>F</strong></td><td>Fusion Beat</td><td>162</td><td>102</td><td><strong>62.96%</strong></td></tr>
+                <tr><td><strong>Q</strong></td><td>Unknown / Paced Beat</td><td>1,608</td><td>1,575</td><td><strong>97.95%</strong></td></tr>
+                <tr><td><strong>Overall</strong></td><td><strong>All Classes Combined</strong></td><td><strong>21,892</strong></td><td><strong>21,414</strong></td><td><strong>97.82%</strong></td></tr>
+                <tr><td><strong>Balanced</strong></td><td><strong>Unweighted Class Mean</strong></td><td>—</td><td>—</td><td><strong>83.65%</strong></td></tr>
+                <tr><td><strong>Baseline</strong></td><td><strong>Always-Normal Dummy Model</strong></td><td>21,892</td><td>18,118</td><td><strong>82.76%</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/ecgnet/confusion_matrix.png" alt="5x5 Confusion Matrix Heatmap on Test Set" loading="lazy" />
+            <figcaption>Figure 4: 5&times;5 test set confusion matrix heatmap across 21,892 unseen patient heartbeats.</figcaption>
+          </figure>
+
+          <p><strong>Full 5&times;5 Test Confusion Matrix Breakdown:</strong></p>
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>True \ Predicted</th>
+                  <th>Pred N</th>
+                  <th>Pred S</th>
+                  <th>Pred V</th>
+                  <th>Pred F</th>
+                  <th>Pred Q</th>
+                  <th>Total True</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>True N (Normal)</strong></td><td><strong>18,045</strong></td><td>21</td><td>18</td><td>11</td><td>23</td><td>18,118</td></tr>
+                <tr><td><strong>True S (Supraventricular)</strong></td><td>181</td><td><strong>369</strong></td><td>4</td><td>0</td><td>2</td><td>556</td></tr>
+                <tr><td><strong>True V (Ventricular)</strong></td><td>100</td><td>4</td><td><strong>1,323</strong></td><td>15</td><td>6</td><td>1,448</td></tr>
+                <tr><td><strong>True F (Fusion)</strong></td><td>39</td><td>0</td><td>21</td><td><strong>102</strong></td><td>0</td><td>162</td></tr>
+                <tr><td><strong>True Q (Paced/Unknown)</strong></td><td>27</td><td>1</td><td>5</td><td>0</td><td><strong>1,575</strong></td><td>1,608</td></tr>
+                <tr><td><strong>Total Predicted</strong></td><td>18,392</td><td>395</td><td>1,371</td><td>128</td><td>1,606</td><td><strong>21,892</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p><strong>Clinical Misclassification Analysis: Why are S and F Challenging?</strong></p>
+          <ul>
+            <li><strong>Class S (66.37% Sensitivity):</strong> 181 out of 556 Supraventricular beats were misclassified as Normal (N). Because supraventricular premature depolarisations enter the ventricles through the intact AV node and bundle branches, the resulting ventricular depolarisation wave produces a narrow, normal-looking QRS complex. Distinguishing S from N relies predominantly on detecting subtle shifts in P-wave timing and amplitude.</li>
+            <li><strong>Class F (62.96% Sensitivity):</strong> 39 out of 162 Fusion beats were misclassified as Normal, and 21 as Ventricular. By definition, a fusion beat is a physical hybrid produced when both normal sinus activation and an ectopic ventricular pacemaker activate cardiac tissue concurrently.</li>
+            <li><strong>Bayesian Prior Bias:</strong> In the training data, Class N outnumbers Class F by <strong>113 to 1</strong> (65,224 vs 577). On morphologically borderline beats, the network's learned prior naturally favors predicting Class N unless feature evidence is overwhelming.</li>
+          </ul>
+
+          <h3>7. Deep Inquiries: Optimization &amp; Regularization Dynamics</h3>
+
+          <p><strong>7.1 What does momentum do when consecutive gradients point in opposite directions?</strong></p>
+          <p>
+            The velocity update <code>v := &beta; v + (1 - &beta;) g</code> acts as an exponential low-pass filter. When consecutive mini-batch gradients point in opposing directions (common along steep ravines or canyon walls in the loss surface), the opposing terms cancel out (<code>g<sub>t</sub> &approx; -g<sub>t-1</sub> &implies; v &approx; 0</code>). This drastically damps high-frequency transverse oscillations while reinforcing persistent gradient directions, stabilizing the optimizer.
+          </p>
+
+          <p><strong>7.2 What does weight decay do to a weight that receives zero gradient?</strong></p>
+          <p>
+            If a feature is completely uninformative or dormant such that <code>&part;J / &part;W = 0</code>, the effective gradient reduces purely to the regularisation term: <code>g = &lambda; W</code>. Over successive parameter updates:
+          </p>
+          <pre><code>W := W - &alpha; &middot; (1 - &beta;) &middot; &lambda; W = W &middot; [ 1 - &alpha; &middot; (1 - &beta;) &middot; &lambda; ]</code></pre>
+          <p>
+            Because the multiplier is strictly less than 1, the weight decays exponentially toward zero with every mini-batch step. This prunes unneeded synapses, suppresses co-adaptation, and prevents overfitting.
+          </p>
+
+          <p><strong>7.3 How can we improve sensitivity on rare arrhythmias like Fusion (F)?</strong></p>
+          <p>
+            The most principled remedy is <strong>Class-Weighted Softmax Cross-Entropy</strong>:
+          </p>
+          <pre><code>J<sub>weighted</sub> = (1 / B) &Sigma; w<sub>y_i</sub> &middot; [ -Z<sup>[3]</sup><sub>i, y_i</sub> + logsumexp(Z<sup>[3]</sup><sub>i, :</sub>) ]
+w<sub>c</sub> = N<sub>total</sub> / (5 &middot; N<sub>c</sub>)  &implies;  w<sub>N</sub> &approx; 0.24,   w<sub>F</sub> &approx; 27.32</code></pre>
+          <p>
+            Under this weighting, a classification error on a rare Fusion beat penalizes the objective function <strong>113 times more heavily</strong> than an error on a Normal beat, compelling the optimizer to carve out distinct decision boundaries around rare pathological morphologies.
+          </p>
+
+          <h3>8. Real-Time Oscilloscope Dashboard &amp; Synapse Telemetry</h3>
+          <p>
+            To bring this mathematical model to life, we developed an interactive, client-side web application inspired by our dark aesthetic with crimson glowing accents (<code>#ff3131</code>) and typography:
+          </p>
+
+          <ul>
+            <li><strong>Canvas Oscilloscope Monitor:</strong> Simulates a real-time hospital bedside cardiac sweep with glowing traces, sweep head markers, and calibration grid lines.</li>
+            <li><strong>Interactive Neural Network Visualizer:</strong> Renders all four topological layers (187 inputs &rarr; 128 hidden neurons &rarr; 64 hidden neurons &rarr; 5 output logits) in real time.</li>
+            <li><strong>Traveling Electrical Impulse Cascade:</strong> Clicking <em>"Trigger Impulse"</em> sends animated synaptic electrical signals surging through the neural pathways from input samples to output probabilities.</li>
+            <li><strong>Live ReLU Sparsity Telemetry:</strong> Live counters display active vs. clamped neurons in Layer 1 and Layer 2, exposing hidden representation sparsity on every loaded heartbeat.</li>
+            <li><strong>Pre-Embedded Model Weights:</strong> Pure JavaScript client-side forward pass runs inference in under <strong>0.5 milliseconds</strong> directly in the browser—with zero server dependency.</li>
+          </ul>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/ecgnet/card_preview.png" alt="ECG Live Inference and Waveform Oscilloscope Interface" loading="lazy" />
+            <figcaption>Figure 5: Live inference dashboard showcasing the real-time 187-sample ECG oscilloscope monitor, classification confidence, and diagnostic profile.</figcaption>
+          </figure>
+
+          <h3>9. Summary &amp; Engineering Takeaways</h3>
+          <ul>
+            <li><strong>Zero-Abstraction Mastery:</strong> Building neural networks directly from raw tensors, explicit parameter matrices, and manual gradient verification reveals foundational insights that high-level APIs abstract away.</li>
+            <li><strong>Metric Integrity:</strong> In clinical biomedical ML, raw overall accuracy can be deceptively reassuring. Balanced accuracy (83.65% vs 97.82%) and confusion matrices are indispensable for evaluating real patient risk.</li>
+            <li><strong>Symmetry &amp; Signal Power:</strong> He normal initialization (<code>sqrt(2 / n<sub>in</sub>)</code>) is mathematically required for ReLU networks to counterbalance half-wave variance loss.</li>
+            <li><strong>Compact Efficiency:</strong> With only 32,645 parameters, a well-conditioned MLP achieves 97.82% accuracy on complex biological signals and trains in under 45 seconds on commodity CPU.</li>
+          </ul>
+
+          <div style="margin-top: 2.5rem; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); text-align: center;">
+            <h4 style="margin-bottom: 0.75rem; color: var(--fg); font-size: 1.2rem;">Explore the Complete Source Code &amp; Interactive App</h4>
+            <p style="margin-bottom: 1.25rem; color: var(--fg-muted);">Full PyTorch source code, gradient check routines, learning rate sweep scripts, interactive standalone Canvas web app, and Streamlit deployment are available on GitHub.</p>
+            <a href="https://github.com/F236108/ecgnet-heartbeat-classification-scratch" target="_blank" rel="noopener" class="btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; text-decoration: none;">
+              <i class="fa-brands fa-github"></i> View GitHub Repository
+            </a>
+          </div>
+        </div>
+      </article>
 
       <!-- ARTICLE: THREE-PHASE TRANSMISSION LINE FAULT DETECTION -->
       <article class="blog-article" id="fault-detection">
@@ -913,14 +1328,13 @@
             <li><strong>Closed-Form Normal Equation is Superior for Small m:</strong> For m ≈ 800 rows, the analytical Normal Equation achieves exact global minimum weights instantaneously without hyperparameter tuning.</li>
           </ul>
         </div>
-                <div style="margin-top: 2.5rem; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); text-align: center;">
+        <div style="margin-top: 2.5rem; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); text-align: center;">
             <h4 style="margin-bottom: 0.75rem; color: var(--fg); font-size: 1.2rem;">Explore the Complete Source Code</h4>
             <p style="margin-bottom: 1.25rem; color: var(--fg-muted);">Full Python source code, NumPy implementations, EDA notebooks, Streamlit app, and pretrained models are available on GitHub.</p>
             <a href="https://github.com/F236108/SolarPanel-Power-Prediction" target="_blank" rel="noopener" class="btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; text-decoration: none;">
               <i class="fa-brands fa-github"></i> View GitHub Repository
             </a>
           </div>
-
       </article>
 
       <!-- ARTICLE 1 -->
