@@ -401,6 +401,260 @@
 ══════════════════════════════════════════════ -->
     <main class="blog-container">
 
+      <!-- ARTICLE: HUMAN ACTIVITY RECOGNITION (BiLSTM + ATTENTION) -->
+      <article class="blog-article" id="har-bilstm-attention">
+        <div class="article-meta">
+          <span class="article-tag">Sequence Modeling &amp; AI</span>
+          <span><i class="fa-regular fa-calendar"></i> November 2026</span>
+          <span><i class="fa-regular fa-clock"></i> 13 min read</span>
+          <span><a href="https://github.com/F236108/Human-Activity-Recognition-from-Phone-Motion" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 600;"><i class="fa-brands fa-github"></i> GitHub Repo</a></span>
+        </div>
+        <h2 class="article-title">Recognizing Human Activity from Phone Motion Sensors: Hand-Coded BiLSTM &amp; Temporal Attention from Scratch</h2>
+        <div class="article-image-real">
+          <img src="Images/blog/har/frontend_screenshot.png" alt="HARNet Interactive Browser Application with Sensor Waveforms and Attention Weights" loading="lazy" />
+        </div>
+        <div class="article-content">
+          <p>
+            <em>Building a Bidirectional LSTM with additive temporal attention strictly from scratch in PyTorch—without <code>nn.LSTM</code> or <code>nn.MultiheadAttention</code>—to classify raw multivariate IMU sensor streams and uncover which moments in a 2.56-second window drive every prediction.</em>
+          </p>
+
+          <h3>1. Executive Summary &amp; The Core Question</h3>
+          <p>
+            Every time a smartphone counts footsteps, logs stair climbs, or prompts a user after prolonged inactivity, it solves a multivariate time-series classification problem over raw inertial measurement unit (IMU) readings. Rather than feeding hand-crafted frequency or statistical summary features into classical models, this project classifies six human activities directly from raw triaxial accelerometer and gyroscope waveforms using recurrent and attention architectures implemented from first principles in PyTorch.
+          </p>
+
+          <p><strong>Input &amp; Output Formalism:</strong></p>
+          <ul>
+            <li><strong>Input Tensor (X):</strong> One <code>2.56-second</code> sliding window sampled at <code>50 Hz</code>, yielding a multivariate sequence of shape <code>(128, 9)</code> across 9 sensor channels:
+              <code>body_acc_x/y/z</code> (linear acceleration minus gravity in <em>g</em>), <code>body_gyro_x/y/z</code> (angular velocity in rad/s), and <code>total_acc_x/y/z</code> (raw acceleration including gravity in <em>g</em>).
+            </li>
+            <li><strong>Output Class (y):</strong> Six activity categories re-indexed from <code>1–6</code> to <code>0–5</code>: <code>WALKING</code>, <code>WALKING_UPSTAIRS</code>, <code>WALKING_DOWNSTAIRS</code>, <code>SITTING</code>, <code>STANDING</code>, and <code>LAYING</code>.</li>
+          </ul>
+
+          <blockquote>
+            "When the network decides what someone is doing, which moments of the 2.56-second window does it pay attention to, and which activities can it not tell apart?"
+          </blockquote>
+
+          <p>
+            Evaluating our trained <strong>HARNet</strong> (46,982 parameters) across <strong>2,947 unseen test windows</strong> achieves <strong>90.74% overall accuracy</strong> and reveals two decisive physical behaviors: sharp temporal attention spikes onto step-impact instants during locomotion versus nearly flat attention during still postures, and a stark separation between <code>LAYING</code> (<strong>100.00%</strong>) and the confused static pair <code>SITTING</code> &harr; <code>STANDING</code>.
+          </p>
+
+          <h3>2. Dataset, Signal Anatomy &amp; Person-Based Splitting</h3>
+          <p>
+            We utilized the raw inertial signals from the <strong>UCI Human Activity Recognition (HAR) Using Smartphones</strong> benchmark, recorded from 30 volunteers (aged 19–48) wearing a waist-mounted Samsung Galaxy S II at 50 Hz.
+          </p>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/har/example_windows.png" alt="Example 2.56-Second Sensor Windows Across All Six Activities" loading="lazy" />
+            <figcaption>Figure 1: Raw 9-channel sensor windows (128 steps = 2.56s) across each activity, contrasting periodic locomotion oscillations against flat static postures.</figcaption>
+          </figure>
+
+          <p><strong>Why Split Validation by Person Instead of Random Windows?</strong></p>
+          <p>
+            In the UCI HAR dataset, consecutive 128-sample sliding windows overlap by <strong>50% (64 shared time steps)</strong>. A naive random window split places overlapping halves of the exact same footstep stride into both training and validation sets, inflating validation accuracy via window memorization. To enforce genuine cross-subject generalization, we partitioned validation strictly by volunteer ID (<code>VAL_SUBJECTS = [3, 15, 25, 30]</code>) and computed channel means &mu;<sub>c</sub> and standard deviations &sigma;<sub>c</sub> solely from training windows.
+          </p>
+
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Dataset Partition</th>
+                  <th>Windows</th>
+                  <th>Volunteers</th>
+                  <th>Subject IDs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Training Split</strong></td><td>5,891</td><td>17</td><td><code>1, 5, 6, 7, 8, 11, 14, 16, 17, 19, 21, 22, 23, 26, 27, 28, 29</code></td></tr>
+                <tr><td><strong>Validation Split</strong></td><td>1,461</td><td>4</td><td><code>3, 15, 25, 30</code></td></tr>
+                <tr><td><strong>Holdout Test Set</strong></td><td>2,947</td><td>9</td><td><code>2, 4, 9, 10, 12, 13, 18, 20, 24</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>3. Mathematical Architecture from Scratch</h3>
+          <p>
+            Following a strict zero-high-level-layer audit (<strong>0 occurrences</strong> of <code>nn.RNN</code>, <code>nn.LSTM</code>, <code>nn.GRU</code>, <code>nn.LSTMCell</code>, or <code>nn.MultiheadAttention</code>), we built every recurrent cell, bidirectional sequence loop, and temporal attention mechanism directly from PyTorch tensors and <code>nn.Parameter</code>.
+          </p>
+
+          <p><strong>3.1 Packed 4-Gate LSTM Cell (<code>LSTMCell</code>):</strong></p>
+          <p>
+            Rather than maintaining four separate linear layers per gate, all four gates—input (<em>i</em>), forget (<em>f</em>), cell candidate (<em>g</em>), and output (<em>o</em>)—are packed into one input weight matrix <code>W &isin; &reals;<sup>4H &times; D</sup></code>, one recurrent matrix <code>U &isin; &reals;<sup>4H &times; H</sup></code>, and one bias vector <code>b &isin; &reals;<sup>4H</sup></code> (with <code>D = 9</code>, <code>H = 64</code>):
+          </p>
+
+          <pre><code>z_t = x_t W^T + h_{t-1} U^T + b   &isin; &reals;^(B &times; 256)
+[i_t, f_t, g_t, o_t] = split(z_t, 4)
+
+i_t = &sigma;(z_i),   f_t = &sigma;(z_f),   g_t = tanh(z_g),   o_t = &sigma;(z_o)
+c_t = f_t &odot; c_{t-1} + i_t &odot; g_t     (additive cell state highway)
+h_t = o_t &odot; tanh(c_t)              (hidden state output)</code></pre>
+
+          <p><strong>3.2 Bidirectional Sequence Unrolling (<code>BiLSTM</code>):</strong></p>
+          <p>
+            Two independent <code>LSTM</code> layers with separate weights process the 128-step window: the forward layer reads <code>(x<sub>1</sub>, &hellip;, x<sub>128</sub>)</code> while the backward layer reads the reversed sequence <code>(x<sub>128</sub>, &hellip;, x<sub>1</sub>)</code> and reverses its outputs back into original chronological order. Concatenating both states at every time step produces <code>h<sub>t</sub> = [h&#8407;<sub>t</sub> ; h&#8406;<sub>t</sub>] &isin; &reals;<sup>128</sup></code>, outputting shape <code>(B, 128, 128)</code>.
+          </p>
+
+          <p><strong>3.3 Additive Temporal Attention (<code>Attention</code>):</strong></p>
+          <p>
+            Instead of compressing 2.56 seconds of motion solely through the final hidden state, an additive attention module learns a scalar importance score for every time step <em>t</em> and collapses the sequence via a normalized weighted sum:
+          </p>
+
+          <pre><code>e_t = v^T tanh(W_a h_t + b_a),     W_a &isin; &reals;^(64 &times; 128),  v &isin; &reals;^64
+&alpha;_t = exp(e_t) / &Sigma;_{s=1}^{128} exp(e_s)
+c   = &Sigma;_{t=1}^{128} &alpha;_t h_t      &isin; &reals;^(B &times; 128)</code></pre>
+
+          <p><strong>3.4 Exact Parameter Count Derivation (<code>HARNet</code>):</strong></p>
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Component</th>
+                  <th>Parameter Shapes</th>
+                  <th>Exact Calculation</th>
+                  <th>Trainable Params</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Forward <code>LSTMCell</code></strong></td><td><code>W &isin; &reals;<sup>256&times;9</sup>, U &isin; &reals;<sup>256&times;64</sup>, b &isin; &reals;<sup>256</sup></code></td><td>2,304 + 16,384 + 256</td><td>18,944</td></tr>
+                <tr><td><strong>Backward <code>LSTMCell</code></strong></td><td><code>W &isin; &reals;<sup>256&times;9</sup>, U &isin; &reals;<sup>256&times;64</sup>, b &isin; &reals;<sup>256</sup></code></td><td>2,304 + 16,384 + 256</td><td>18,944</td></tr>
+                <tr><td><strong>Additive <code>Attention</code></strong></td><td><code>W<sub>a</sub> &isin; &reals;<sup>64&times;128</sup>, b<sub>a</sub> &isin; &reals;<sup>64</sup>, v &isin; &reals;<sup>64</sup></code></td><td>8,192 + 64 + 64</td><td>8,320</td></tr>
+                <tr><td><strong>Classifier <code>nn.Linear(128, 6)</code></strong></td><td><code>W<sub>c</sub> &isin; &reals;<sup>6&times;128</sup>, b<sub>c</sub> &isin; &reals;<sup>6</sup></code></td><td>768 + 6</td><td>774</td></tr>
+                <tr><td><strong>Total (<code>HARNet</code>)</strong></td><td>—</td><td>37,888 + 8,320 + 774</td><td><strong>46,982</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>4. Training Protocol &amp; Gradient Norm Clipping</h3>
+          <p>
+            Every recurrent and attention tensor was initialized uniformly in <code>[-1/&radic;H, +1/&radic;H] = [-0.125, +0.125]</code> with <code>torch.manual_seed(0)</code>. Before the first gradient step, the measured initial cross-entropy loss was <strong>1.8058</strong>—matching the theoretical equiprobable 6-class expectation <code>ln(6) &approx; 1.7918</code>.
+          </p>
+          <ul>
+            <li><strong>Optimizer &amp; Loss:</strong> <code>torch.optim.Adam(lr=1e-3)</code> with <code>F.cross_entropy</code>, batch size <code>64</code>, shuffled every epoch for 30 epochs.</li>
+            <li><strong>Gradient Clipping:</strong> <code>clip_grad_norm_(model.parameters(), 1.0)</code> applied after <code>loss.backward()</code> to prevent exploding recurrent gradients.</li>
+            <li><strong>Best Checkpoint:</strong> Epoch 3 achieved the lowest validation loss (<strong>0.1304</strong>) and <strong>96.44%</strong> validation accuracy (495.8s CPU training).</li>
+          </ul>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/har/training_curves.png" alt="HARNet Training Loss and Validation Accuracy Curves Over 30 Epochs" loading="lazy" />
+            <figcaption>Figure 2: Training loss, validation loss, and validation accuracy across 30 epochs; best model checkpoint preserved at Epoch 3.</figcaption>
+          </figure>
+
+          <h3>5. Test Set Evaluation &amp; The 6&times;6 Confusion Matrix</h3>
+          <p>
+            Evaluated once on the sealed test set of <strong>2,947 windows across 9 unseen volunteers</strong>, <code>HARNet</code> achieved <strong>90.74% overall accuracy</strong> (2,674 correct predictions):
+          </p>
+
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Activity Class</th>
+                  <th>Test Windows</th>
+                  <th>Correct</th>
+                  <th>Per-Class Accuracy</th>
+                  <th>Mean Peak Attention (max &alpha;<sub>t</sub>)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>WALKING</strong></td><td>496</td><td>435</td><td>87.70%</td><td><strong>0.2863</strong></td></tr>
+                <tr><td><strong>WALKING_UPSTAIRS</strong></td><td>471</td><td>466</td><td>98.94%</td><td><strong>0.2174</strong></td></tr>
+                <tr><td><strong>WALKING_DOWNSTAIRS</strong></td><td>420</td><td>412</td><td>98.10%</td><td><strong>0.2640</strong></td></tr>
+                <tr><td><strong>SITTING</strong></td><td>491</td><td>380</td><td>77.39%</td><td>0.0166</td></tr>
+                <tr><td><strong>STANDING</strong></td><td>532</td><td>444</td><td>83.46%</td><td>0.0162</td></tr>
+                <tr><td><strong>LAYING</strong></td><td>537</td><td>537</td><td><strong>100.00%</strong></td><td>0.0104</td></tr>
+                <tr><td><strong>Overall / Uniform Ref</strong></td><td><strong>2,947</strong></td><td><strong>2,674</strong></td><td><strong>90.74%</strong></td><td><code>1/128 &approx; 0.0078</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/har/confusion_matrix.png" alt="6x6 Test Set Confusion Matrix Heatmap for HARNet" loading="lazy" />
+            <figcaption>Figure 3: 6&times;6 confusion matrix across 2,947 unseen test windows highlighting strong gait classification and SITTING/STANDING overlap.</figcaption>
+          </figure>
+
+          <div class="article-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>True \ Predicted</th>
+                  <th>WALKING</th>
+                  <th>UPSTAIRS</th>
+                  <th>DOWNSTAIRS</th>
+                  <th>SITTING</th>
+                  <th>STANDING</th>
+                  <th>LAYING</th>
+                  <th>Row Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>WALKING</strong></td><td><strong>435</strong></td><td>43</td><td>14</td><td>2</td><td>2</td><td>0</td><td>496</td></tr>
+                <tr><td><strong>WALKING_UPSTAIRS</strong></td><td>3</td><td><strong>466</strong></td><td>2</td><td>0</td><td>0</td><td>0</td><td>471</td></tr>
+                <tr><td><strong>WALKING_DOWNSTAIRS</strong></td><td>4</td><td>4</td><td><strong>412</strong></td><td>0</td><td>0</td><td>0</td><td>420</td></tr>
+                <tr><td><strong>SITTING</strong></td><td>0</td><td>2</td><td>0</td><td><strong>380</strong></td><td>109</td><td>0</td><td>491</td></tr>
+                <tr><td><strong>STANDING</strong></td><td>1</td><td>0</td><td>0</td><td>87</td><td><strong>444</strong></td><td>0</td><td>532</td></tr>
+                <tr><td><strong>LAYING</strong></td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td><strong>537</strong></td><td>537</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p><strong>Why Do <code>SITTING</code> &amp; <code>STANDING</code> Confuse the Network While <code>LAYING</code> Hits 100%?</strong></p>
+          <ul>
+            <li><strong>The Confusion Pair (196 of 273 Total Errors):</strong> 109 <code>SITTING</code> windows were classified as <code>STANDING</code>, and 87 <code>STANDING</code> windows as <code>SITTING</code>. From a waist-mounted phone, both upright stationary postures exhibit virtually zero dynamic body acceleration or angular rotation, differing only by subtle pelvis tilt relative to gravity.</li>
+            <li><strong>Perfect <code>LAYING</code> Separation (537 / 537):</strong> When lying horizontally, Earth's 1<em>g</em> gravity vector rotates onto an orthogonal accelerometer axis in <code>total_acc_x/y/z</code>, producing a large, unmistakable constant offset unlike any upright posture.</li>
+          </ul>
+
+          <h3>6. Where Does the Model Look? Temporal Attention Interpretability</h3>
+          <p>
+            Visualizing the attention distribution &alpha;<sub>t</sub> beneath the raw inertial signals directly answers which moments drive classification:
+          </p>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/har/attention_per_window.png" alt="Sensor Waveforms and Temporal Attention Weights per Activity" loading="lazy" />
+            <figcaption>Figure 4: Sensor channels plotted alongside learned temporal attention weights &alpha;<sub>t</sub> for one correctly classified window per activity.</figcaption>
+          </figure>
+
+          <figure class="blog-figure">
+            <img src="Images/blog/har/average_attention.png" alt="Mean Attention Profile per Activity Across All Test Windows" loading="lazy" />
+            <figcaption>Figure 5: Average attention weight trajectories across all 2,947 test windows, contrasting dynamic gait spikes against flat static profiles.</figcaption>
+          </figure>
+
+          <ul>
+            <li><strong>Dynamic Activities (Mean Peak &alpha;<sub>t</sub> = 0.2174–0.2863):</strong> During walking and stair climbing, attention spikes up to <strong>36&times; higher than the uniform baseline</strong> (<code>0.0078</code>), locking selectively onto sharp heel-strike and step-impact instants where acceleration peaks.</li>
+            <li><strong>Static Postures (Mean Peak &alpha;<sub>t</sub> = 0.0104–0.0166):</strong> During sitting, standing, and laying, sensor readings remain stationary across all 128 time steps; every step carries equal information, so the softmax layer spreads weight smoothly across the window.</li>
+          </ul>
+
+          <h3>7. Architectural Trade-offs: BiLSTM, Vanishing Gradients &amp; Streaming Limits</h3>
+          <ul>
+            <li><strong>When is BiLSTM Valid vs. Invalid?</strong> A bidirectional LSTM is valid here because classification operates offline on a complete, pre-recorded 2.56-second buffer where all 128 steps already exist. In a real-time streaming system requiring zero-lookahead inference (e.g., triggering an instant fall alarm mid-step), future samples do not exist yet, making the backward pass unusable.</li>
+            <li><strong>LSTM vs. Plain <code>RNNCell</code> Over 128 Steps:</strong> A plain RNN (<code>h<sub>t</sub> = tanh(W x<sub>t</sub> + U h<sub>t-1</sub> + b)</code>) repeatedly multiplies backpropagated gradients by <code>tanh</code> Jacobians (&le; 1), causing exponential gradient vanishing across 128 steps. The LSTM's additive cell update <code>c<sub>t</sub> = f<sub>t</sub> &odot; c<sub>t-1</sub> + i<sub>t</sub> &odot; g<sub>t</sub></code> preserves an unattenuated gradient highway whenever <code>f<sub>t</sub> &approx; 1</code>, while <code>clip_grad_norm_(1.0)</code> tames exploding gradients.</li>
+          </ul>
+
+          <h3>8. Zero-Backend Standalone Browser Application</h3>
+          <p>
+            To make the trained sequence model interactive without requiring a Python server, we built a single-file standalone browser application (<code>app/index.html</code>) styled to match this portfolio's dark/light surface and crimson accent palette:
+          </p>
+          <ul>
+            <li><strong>Pure JS PyTorch Equivalence:</strong> All 46,982 trained IEEE-754 <code>float32</code> weights are embedded in Base64, executing the exact <code>BiLSTM + Attention + Linear</code> forward pass client-side—verified against PyTorch across 18 test windows with a maximum probability difference of just <strong>5.16 &times; 10<sup>-7</sup></strong>.</li>
+            <li><strong>Real-Time Telemetry &amp; Custom CSV Upload:</strong> Inspect all 9 inertial channels, hover over attention weight peaks vs. the <code>1/128</code> uniform threshold, or upload custom <code>128 &times; 9</code> CSV motion traces directly in the browser.</li>
+          </ul>
+
+          <h3>9. Summary &amp; Engineering Takeaways</h3>
+          <ul>
+            <li><strong>Leak-Free Validation Matters:</strong> Overlapping sliding windows mandate subject-disjoint splits so accuracy reflects generalization to unseen humans rather than stride memorization.</li>
+            <li><strong>Interpretability Built Into Architecture:</strong> Additive temporal attention exposes how recurrent models compress periodic gait cycles to key impact instants while averaging static posture baselines.</li>
+            <li><strong>From-Scratch Verification:</strong> Hand-coding packed 4-gate LSTM cells and verifying initial loss against theoretical expectations (<code>1.8058</code> vs <code>ln 6</code>) eliminates black-box guesswork.</li>
+          </ul>
+
+          <div style="margin-top: 2.5rem; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); text-align: center;">
+            <h4 style="margin-bottom: 0.75rem; color: var(--fg); font-size: 1.2rem;">Explore the Complete Source Code &amp; Browser App</h4>
+            <p style="margin-bottom: 1.25rem; color: var(--fg-muted);">Full PyTorch from-scratch layers, person-split pipeline, attention plots, and the standalone zero-backend JS app are available on GitHub.</p>
+            <a href="https://github.com/F236108/Human-Activity-Recognition-from-Phone-Motion" target="_blank" rel="noopener" class="btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; text-decoration: none;">
+              <i class="fa-brands fa-github"></i> View GitHub Repository
+            </a>
+          </div>
+        </div>
+      </article>
+
       <!-- ARTICLE: ECGNET HEARTBEAT CLASSIFICATION -->
       <article class="blog-article" id="ecgnet-classification">
         <div class="article-meta">
